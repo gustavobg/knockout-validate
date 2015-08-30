@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <title>Examples</title>
+</head>
+<body>
+    <h1>Validate Examples!</h1>
+
+    <form id="examples" data-bind="validateForm: { submitHandler: Save }">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input id="name" type="text" data-bind="value: name, validate: { required: true }" />
+        </div>
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input id="email" type="text" data-bind="value: email, validate: { email: true }" />
+        </div>
+        <div class="form-group">
+            <label for="age">Your age</label>
+            <input id="age" type="text" data-bind="value: age, validate: { digit: true }" />
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input id="password" type="password" data-bind="value: password, validate: { required: true }" />
+        </div>
+        <div class="form-group">
+            <label for="confirm_password">Confirm Password</label>
+            <input id="confirm_password" type="password" data-bind="value: confirm_password, validate: { required: true, equal: password }" />
+        </div>
+
+        <input type="submit" class="btn btn-success" value="Submit">
+
+    </form>
+
+
+<script src="components/jquery/dist/jquery.min.js"></script>
+<script src="components/knockout/dist/knockout.js"></script>
+<script src="scripts/knockout-validate.js"></script>
+<script src="scripts/knockout-validate-rules.js"></script>
+<script type="text/javascript">
+    var vm = function () {
+        var self = this;
+
+        this.name = ko.observable();
+        this.age = ko.observable();
+        this.password = ko.observable();
+        this.email = ko.observable();
+        this.confirm_password = ko.observable();
+
+        this.Save = function () {
+            if (self.isValid) {
+                alert('Valid form! submitting!')
+            } else {
+                alert('Hmm. Check this errors!');
+                self.showErrors();
+            }
+        };
+    };
+    vm = new vm();
+    ko.applyBindings(vm, document.getElementById('examples'));
+</script>
+
+</body>
+</html>

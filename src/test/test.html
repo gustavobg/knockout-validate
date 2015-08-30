@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Knockout Validator Tests</title>
+
+    <link href="http://code.jquery.com/qunit/qunit-git.css" rel="stylesheet" type="text/css" />
+    <script src="http://code.jquery.com/qunit/qunit-1.18.0.js"></script>
+    <!-- Tests -->
+</head>
+<body>
+<div id="qunit"></div>
+<div id="qunit-fixture">
+
+    <form id="examples" data-bind="validateForm: { submitHandler: Save }">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input id="name" type="text" data-bind="value: name, validate: { required: true }" />
+        </div>
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input id="email" type="text" data-bind="value: email, validate: { email: true }" />
+        </div>
+        <div class="form-group">
+            <label for="age">Your age</label>
+            <input id="age" type="text" data-bind="value: age, validate: { digit: true }" />
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input id="password" type="password" data-bind="value: password, validate: { required: true }" />
+        </div>
+        <div class="form-group">
+            <label for="confirm_password">Confirm Password</label>
+            <input id="confirm_password" type="password" data-bind="value: confirm_password, validate: { required: true, equal: password }" />
+        </div>
+
+        <input type="submit" class="btn btn-success" value="Submit">
+    </form>
+
+    <form id="custom-binding">
+    </form>
+</div>
+
+<script src="../components/jquery/dist/jquery.min.js"></script>
+<script src="../components/knockout/dist/knockout.debug.js"></script>
+<script src="../scripts/knockout-validate.js"></script>
+<script src="../scripts/knockout-validate-rules.js"></script>
+<script>
+
+    module("Knockout-validate");
+    /*
+     - Faz o bind?
+     - Valida obrigatório?
+     - Exibe mensagem de erro?
+
+     https://github.com/AndersMalmgren/Knockout.Bindings/blob/master/test/test.js
+
+     */
+    function setupCustomBinding(vm, binding) {
+        var element = $('<input id="idElement" type="text" />').appendTo('#custom-binding');
+        ko.cleanNode(document.getElementById('custom-binding'));
+        ko.applyBindingsToNode(element[0], binding, vm);
+        console.log(vm);
+        return vm;
+    }
+    function setupViewModel(valid) {
+        if (valid === undefined)
+            valid = false;
+
+        ko.cleanNode(document.getElementById('examples'));
+        // clear invalid fields
+        var vm = function () {
+            var self = this;
+            if (valid) {
+                this.name = ko.observable('John');
+                this.age = ko.observable(10);
+                this.password = ko.observable(123);
+                this.confirm_password = ko.observable(123);
+                this.email = ko.observable('john@snow.com');
+            } else {
+                this.name = ko.observable();
+                this.age = ko.observable();
+                this.password = ko.observable();
+                this.confirm_password = ko.observable();
+                this.email = ko.observable();
+            }
+            this.Save = function () {
+                if (self.isValid) {
+                    alert('Valid form! submitting!')
+                } else {
+                    alert('Hmm. Check this errors!');
+                    self.showErrors();
+                }
+            };
+        };
+        vm = new vm();
+        ko.applyBindings(vm, document.getElementById('examples'));
+
+        return vm;
+    };
+
+    function eliminateDuplicates(arr) {
+        var i, len=arr.length, out=[], obj={};
+        for (i=0;i<len;i++) {
+            obj[arr[i]]=0;
+        }
+        for (i in obj) {
+            out.push(i);
+        }
+        return out;
+    }
+
+    test('validator configuration', function () {
+        ko.validate.configuration.useRequiredMarker = false;
+        ko.validate.configuration.reset();
+        ok(ko.validate.configuration.useRequiredMarker, 'defaults resets values');
+    });
+
+    test('validator methods', function () {
+        var vm = setupViewModel();
+        ok(typeof (vm.showErrors) === 'function', 'showErrors binded');
+        ok(typeof (vm.isValidShowErrors) === 'function', 'isValidShowErrors binded');
+        ok(typeof (vm.invalidFields) === 'function', 'invalidFields binded');
+        ok(typeof (vm.isValidShowErrors()) === 'boolean', 'isValidShowErrors returns true/false');
+    });
+
+    test('showErrors observable', function () {
+        var vm = setupViewModel();
+        var invalidFieldsLength = eliminateDuplicates(vm.invalidFields()).length; // eliminates duplicate values, because a property can have more than 1 error.
+
+        ok($('.' + ko.validate.configuration.classMessageError).filter(":visible").length === 0, 'errors not shown if not requested');
+        vm.showErrors();
+        ok($('.form-group.' + ko.validate.configuration.classElementError).filter(":visible").length === invalidFieldsLength, 'error classes correctly binded');
+        ok($('.' + ko.validate.configuration.classMessageError).filter(":visible").length === invalidFieldsLength, 'error messages correctly binded');
+    });
+
+    test('isValid observable', function () {
+        var vm = setupViewModel(true);
+        ok(vm.isValid(), 'isValid should be true');
+        vm.confirm_password('123');
+        ok(!vm.isValid(), 'isValid should be false');
+    });
+
+    test('invalidFields observable', function () {
+        var vm = setupViewModel(true);
+        // should not be valid, because some fields are required
+        ok(vm.invalidFields().length === 0, 'invalidFields should be empty');
+        vm.name('');
+        ok(vm.invalidFields().length > 0, 'invalidFields should be not empty');
+    });
+
+    test('parameter set', function () {
+        var vm = setupViewModel(),
+            nameElement = document.getElementById('name');
+
+        ko.cleanNode(nameElement);
+        ko.applyBindingsToNode(nameElement, { value: name, validate: { required: { param: false, message: '123' } } }, vm);
+
+        ok($(nameElement).next().text() === '123', 'message appended correctly');
+        ok(vm.invalidFields().indexOf('name') === 0, 'param set to false correctly');
+
+        vm = setupViewModel();
+        ko.applyBindingsToNode(nameElement, { value: name, validate: { required: { param: true, message: '123' } } }, vm);
+        ok(vm.invalidFields().indexOf('name') >= 0, 'param set to true correctly');
+    });
+
+    test('rule equal', function () {
+        var vm = setupViewModel(true);
+        ok(vm.isValid(), 'params are equal');
+        vm.confirm_password('12345');
+        ok(!vm.isValid(), 'params are not equal');
+    });
+
+    test('rule email', function () {
+        var vm = setupViewModel(true);
+        vm.email('teste@aaaa'); // invalid e-mail
+        ok(!vm.isValid(), 'e-mail is not valid');
+        vm.email('teste@aaaa.com');
+        ok(vm.isValid(), 'e-mail is valid');
+    });
+
+    test('rule cep', function () {
+        var vm = setupCustomBinding({ cep: ko.observable() }, { value: '2', validate: { cep: true } });
+        vm.cep('14030420'); // valid cep
+        ok(vm.isValid(), 'cep is valid');
+//        vm.email('teste@aaaa.com');
+//        ok(vm.isValid(), 'e-mail is valid');
+    });
+
+    test('validator DOM manipulation', function () {
+        var vm = setupViewModel();
+        ok(typeof (vm.showErrors) === 'function', 'showErrors binded');
+        ok(typeof (vm.isValidShowErrors) === 'function', 'isValidShowErrors binded');
+        ok(typeof (vm.isValidShowErrors()) === 'boolean', 'isValidShowErrors returns true/false');
+    });
+
+    function createBindTest(bindings) {
+        var element = $('<input type="text" />').appendTo('#qunit-fixture');
+        ko.applyBindingsToNode(element[0], bindings);
+    };
+
+    ko.test = function (tag, binding, test) {
+        var element = $("<" + tag + "/>");
+        element.appendTo("body");
+        ko.applyBindingsToNode(element[0], binding);
+        var args = {
+            clean: function () {
+                element.remove();
+            }
+        };
+        test(element, args);
+
+        if (!args.async) {
+            args.clean();
+        }
+    };
+
+    var setupElement = function (tag, bindings, vm) {
+        var element = $('<' + tag + ' />');
+        element.appendTo('body');
+    };
+
+    var testBinding = function () {
+        var element = $('<input type="text" />');
+        element.appendTo("body");
+
+        debugger;
+
+        ko.applyBindingsToNode(element[0], { validate: { required: true } });
+
+        console.log(ko.contextFor(element));
+
+        return false;
+    }
+    //var value = "hello";
+    //assert.equal(value, "hello", "Knockout OK");
+    //ok(ko, 'Knockout OK');
+    //ok(testBinding, 'Binding OK');
+    test('knockout ok', function () {
+        ok(ko, 'Knockout OK');
+    });
+
+</script>
+</body>
+</html>
