@@ -3,7 +3,11 @@
   "description": "Knockout form validator based on binding-handlers",
   "homepage": "https://github.com/gustavobg/knockout-validate",
   "author": "gustavobrittogebrim@gmail.com",
-  "main": ["dist/knockout-validate.js", "dist/knockout-validate.css"],
+  "main": [
+    "dist/knockout-validate.js",
+    "dist/knockout-validate.css"
+  ],
+  "version": "0.0.1",
   "keywords": [
     "knockout",
     "validate",
