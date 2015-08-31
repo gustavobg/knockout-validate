@@ -1,19 +1,29 @@
 {
-  "name": "knockout-validate-handler",
-  "main": "src/scripts/knockout-validate.js",
-  "version": "0.0.0",
+  "name": "knockout-validate",
+  "description": "Knockout form validator based on binding-handlers",
+  "homepage": "https://github.com/gustavobg/knockout-validate",
+  "author": "gustavobrittogebrim@gmail.com",
+  "main": ["dist/knockout-validate.js", "dist/knockout-validate.css"],
+  "keywords": [
+    "knockout",
+    "validate",
+    "validator",
+    "knockout-validate",
+    "binding-handler",
+    "ko"
+  ],
+  "license": "MIT",
   "ignore": [
     "node_modules",
-    "spec",
+    "src/spec",
     "Gruntfile.js",
     "karma.conf.js",
     "package.json"
   ],
   "dependencies": {
     "jquery": "~2.1.4",
-    "knockout": "~3.3.0"
+    "knockout": "~3.3.0",
+    "requirejs": "~2.1.20"
   },
-  "devDependencies": {
-
-  }
+  "devDependencies": {}
 }

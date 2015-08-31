@@ -1,7 +1,10 @@
-var gulp = require('gulp');
-var browserSync = require('browser-sync').create();
-var sass = require('gulp-sass');
-var plumber = require('gulp-plumber');
+var  gulp = require('gulp'),
+     browserSync = require('browser-sync').create(),
+     sass = require('gulp-sass'),
+     plumber = require('gulp-plumber'),
+     qunit = require('gulp-qunit'),
+     pkg = require('./package.json'),
+     uglify = require('gulp-uglify');
 
 
 gulp.task('default', function() {
@@ -9,7 +12,7 @@ gulp.task('default', function() {
 });
 
 // Static server
-gulp.task('serve', ['sass'], function() {
+gulp.task('serve', function() {
     browserSync.init({
         server: {
             baseDir: "./src"
@@ -18,6 +21,23 @@ gulp.task('serve', ['sass'], function() {
 
     gulp.watch("src/styles/*.scss", ['sass']);
     gulp.watch("src/*.html").on('change', browserSync.reload);
+});
+
+
+gulp.task('build', function() {
+    return gulp.src('./src/knockout-validate.js')
+        .pipe(gulp.dest('./dist'))
+        .pipe(uglify())
+});
+
+gulp.task('release', function() {
+
+});
+
+// test
+gulp.task('test', function() {
+    return gulp.src('src/spec/index.html')
+        .pipe(qunit());
 });
 
 // Compile sass into CSS & auto-inject into browsers
