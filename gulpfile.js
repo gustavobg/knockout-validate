@@ -62,6 +62,7 @@ gulp.task('tag', ['bump'], function () {
     var message = 'Release ' + v;
 
     return gulp.src('./')
+        .pipe(git.add({args: '--all'}))
         .pipe(git.commit(message))
         .pipe(git.tag(v, message))
         .pipe(git.push('origin', 'master', ''))
