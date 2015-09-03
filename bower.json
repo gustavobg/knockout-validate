@@ -26,8 +26,7 @@
   ],
   "dependencies": {
     "jquery": "~2.1.4",
-    "knockout": "~3.3.0",
-    "requirejs": "~2.1.20"
+    "knockout": "~3.3.0"
   },
   "devDependencies": {}
 }
