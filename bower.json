@@ -7,7 +7,7 @@
     "dist/knockout-validate.js",
     "dist/knockout-validate.css"
   ],
-  "version": "0.0.15",
+  "version": "0.0.16",
   "keywords": [
     "knockout",
     "validate",
