@@ -66,13 +66,15 @@
         classElementError: 'error',
         classMessageError: 'error-message',
         classHasRequired: 'has-required',
-        classHasError: 'has-error'
+        classHasError: 'has-error',
+        classGroupContainer: 'form-group',
+        appendMessageToContainer: false
     };
 
     // make a copy  so we can use 'reset' later
     var configuration = ko.utils.extend({}, defaults);
 
-    configuration.reset = function () {
+    ko.validate.utils.resetConfig = function () {
         ko.utils.extend(configuration, defaults);
     };
     ko.validate.configuration = configuration;
@@ -313,10 +315,9 @@
     };
 
 
-    ko.validate['setValidationProperties'] = function (vm, options) {
+    ko.validate['setValidationProperties'] = function (vm) {
         var validateModel = function () {
             var self = this;
-            this.numberOfValidateFields = ko.observable(0);
             this.invalidFields = ko.observableArray([]);
             this.isValid = ko.computed(function () {
                 return self.invalidFields().length === 0;
@@ -336,10 +337,16 @@
                 }
                 ko.utils.arrayForEach(self.invalidFields(), function (elementId, index) {
                     //var options = ko.validate.utils.getConfigOptions(element);
+
                     var element = $('#' + elementId),
-                        formGroup = element.closest('.form-group').addClass(options.classHasError);
-                    element.addClass(element.data('errorClass'));
-                    element.next().show();
+                        o = element.data('options'),
+                        formGroup = element.closest('.' + o.classGroupContainer).addClass(o.classHasError);
+
+                    element.addClass(o.classElementError);
+                    if (o.appendMessageToContainer)
+                        formGroup.find('.' + o.classMessageError).show();
+                    else
+                        element.next().show();
 
                     if (index === 0) {
                         if (element.is(':visible'))
@@ -389,34 +396,43 @@
             var value = ko.validate.utils.getBindingHandlerValue(valueAccessor, allBindings),
             // check if validation is in a component context
                 viewModel = bindingContext.$component ? bindingContext.$component : viewModel,
-                options = bindingContext.hasOwnProperty('validateOptions') ? $.extend({}, ko.validate.configuration, bindingContext.validateOptions) : ko.validate.configuration,
+                options = bindingContext.hasOwnProperty('validateOptions') ? $.extend(true, ko.validate.configuration, bindingContext.validateOptions) : ko.validate.configuration,
                 element = $(element),
-                elementMessage = $('<span class="' + options.classMessageError + '" style="display: none"></span>').insertAfter(element),
                 setValid = function (elementId) {
                     viewModel.invalidFields.remove(elementId);
                 },
                 setRequiredMarker = function (element) {
-                    element.closest('.form-group').addClass(options.classHasRequired);
+                    element.closest('.' + options.classGroupContainer).addClass(options.classHasRequired);
                 },
                 removeRequiredMarker = function (element) {
-                    element.closest('.form-group').removeClass(options.classHasRequired);
+                    element.closest('.' + options.classGroupContainer).removeClass(options.classHasRequired);
                 },
                 setMessage = function (element, message) {
-                    element.next().text(message);
-                    element.data('errorClass', options.classElementError);
+                    if (options.appendMessageToContainer)
+                        element.closest('.' + options.classGroupContainer).find('.' + options.classMessageError).text(message);
+                    else
+                        element.next().text(message);
                 },
                 setInvalid = function (elementId) {
                     viewModel.invalidFields.push(elementId);
                 },
                 hideError = function (element) {
-                    element.closest('.form-group').removeClass(options.classHasError);
+                    var formGroup = element.closest('.' + options.classGroupContainer);
+                    formGroup.removeClass(options.classHasError);
                     element.removeClass(options.classElementError);
-                    element.next().hide();
+                    if (options.appendMessageToContainer)
+                        formGroup.find('.' + options.classMessageError).hide();
+                    else
+                        element.next().hide();
                 },
                 showError = function (element, message) {
-                    element.closest('.form-group').addClass(options.classHasError);
+                    var formGroup = element.closest('.' + options.classGroupContainer);
+                    formGroup.addClass(options.classHasError);
                     element.addClass(options.classElementError);
-                    element.next().show();
+                    if (options.appendMessageToContainer)
+                        formGroup.find('.' + options.classMessageError).show();
+                    else
+                        element.next().show();
                 },
                 validateRules = function (valueAccessor, value) {
                     // valid params format are: validate: { value: property1, required: true, notEquals: property2 }
@@ -456,6 +472,14 @@
                     console.error('ValidateError: Missing "value" bind parameter. Should be a "value", "textInput", "checked" or a "value" parameter inside the validate handler (validate: { value: observable, required: true })', element);
                 return;
             }
+
+            if (options.appendMessageToContainer)
+                $('<span class="' + options.classMessageError + '" style="display: none"></span>').appendTo(element.closest('.' + options.classGroupContainer));
+            else
+                $('<span class="' + options.classMessageError + '" style="display: none"></span>').insertAfter(element);
+
+            // set element options parameters
+            element.data('options', options);
 
             // append error list to root viewmodel
             if (options.hasOwnProperty('appendErrorsToRoot')) {
@@ -556,6 +580,7 @@
     };
 
     ko.applyBindingsWithValidation = function (viewModel, rootNode, options) {
+        // TODO: Options error
         ko.validate.setValidationProperties(viewModel, options);
         ko.applyBindings(viewModel, rootNode);
     };
