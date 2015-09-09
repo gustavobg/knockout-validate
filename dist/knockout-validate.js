@@ -279,6 +279,7 @@
         validator: function (val, minLength) {
             if(ko.validate.utils.isEmptyVal(val)) { return true; }
             var normalizedVal = ko.validate.utils.isNumber(val) ? ('' + val) : val;
+            ko.validate.rules.minLength.message.replace('{0}', minLength);
             return normalizedVal.length >= minLength;
         },
         message: 'Insira pelo menos {0} caracter(es)'
@@ -288,6 +289,7 @@
         validator: function (val, maxLength) {
             if(ko.validate.utils.isEmptyVal(val)) { return true; }
             var normalizedVal = ko.validate.utils.isNumber(val) ? ('' + val) : val;
+            ko.validate.rules.maxLength.message.replace('{0}', maxLength);
             return normalizedVal.length <= maxLength;
         },
         message: 'Insira no máximo {0} caracter(es)'
@@ -577,7 +579,8 @@
                     };
                     $el.on('keydown', function (e) {
                         // blur elements to trigger viewmodel changes
-                        if (e.keyCode === 13 && e.target.tagName != 'TEXTAREA') {
+                        console.log(e.target.tagName);
+                        if (e.keyCode === 13 && e.target.tagName != 'TEXTAREA' && !e.target.classList.contains('note-editable')) {
                             if (e.target.classList.contains('modal'))
                                 return;
                             e.target.blur();
