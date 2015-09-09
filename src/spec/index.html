@@ -14,7 +14,7 @@
     <form id="examples" data-bind="validateForm: { submitHandler: Save }">
         <div class="form-group">
             <label for="name">Name</label>
-            <input id="name" type="text" data-bind="value: name, validate: { required: true }" />
+            <input id="name" type="text" data-bind="value: name, validate: { required: true, minLength: 3, maxLength: 15 }" />
         </div>
         <div class="form-group">
             <label for="email">E-mail</label>
@@ -170,6 +170,20 @@
         ok(!vm.isValid(), 'e-mail is not valid');
         vm.email('teste@aaaa.com');
         ok(vm.isValid(), 'e-mail is valid');
+    });
+    test('rule minLength', function () {
+        var vm = setupViewModel(true);
+        vm.name('Ow'); // invalid name length
+        ok(!vm.isValid(), 'name is not valid');
+        vm.name('Owl');
+        ok(vm.isValid(), 'name is valid');
+    });
+    test('rule maxLength', function () {
+        var vm = setupViewModel(true);
+        vm.name('John Smith Alexander Paul'); // invalid name length
+        ok(!vm.isValid(), 'name is not valid');
+        vm.name('John Smith Paul');
+        ok(vm.isValid(), 'name is valid');
     });
     test('rule cep', function () {
         var cep = ko.observable(),

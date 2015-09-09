@@ -1,8 +1,4 @@
-/*globals require: false, exports: false, define: false, ko: false */
-
 (function (factory) {
-    // Module systems magic dance.
-
     if (typeof require === "function" && typeof exports === "object" && typeof module === "object") {
         // CommonJS or Node: hard-coded dependency on "knockout"
         factory(require("jquery"), require("ko"), exports);
@@ -45,6 +41,9 @@
             },
             setAttribute: function (element, attr, value) {
                 return element.setAttribute(attr, value);
+            },
+            isNumber: function(o) {
+                return !isNaN(o);
             },
             isEmptyVal: function (val) {
                 if (val === undefined) {
@@ -274,6 +273,31 @@
             return value.length === 8;
         },
         message: 'CEP inválido'
+    };
+
+    ko.validate.rules['minLength'] = {
+        validator: function (val, minLength) {
+            if(ko.validate.utils.isEmptyVal(val)) { return true; }
+            var normalizedVal = ko.validate.utils.isNumber(val) ? ('' + val) : val;
+            return normalizedVal.length >= minLength;
+        },
+        message: 'Insira pelo menos {0} caracter(es)'
+    };
+
+    ko.validate.rules['maxLength'] = {
+        validator: function (val, maxLength) {
+            if(ko.validate.utils.isEmptyVal(val)) { return true; }
+            var normalizedVal = ko.validate.utils.isNumber(val) ? ('' + val) : val;
+            return normalizedVal.length <= maxLength;
+        },
+        message: 'Insira no máximo {0} caracter(es)'
+    };
+
+    ko.validate.rules['pattern'] = {
+        validator: function (val, regex) {
+            return ko.validate.utils.isEmptyVal(val) || val.toString().match(regex) !== null;
+        },
+        message: 'Valor inválido'
     };
 
     ko.validate.rules['phone'] = {
