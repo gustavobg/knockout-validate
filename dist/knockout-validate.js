@@ -511,6 +511,8 @@
             if (options.hasOwnProperty('appendErrorsToRoot')) {
                 if (options.appendErrorsToRoot)
                     viewModel = bindingContext.$root;
+            } else if (options.hasOwnProperty('appendErrorsToContext')) {
+                viewModel = bindingContext[options.appendErrorsToContext];
             }
 
             // check if viewmodel context has validation properties
