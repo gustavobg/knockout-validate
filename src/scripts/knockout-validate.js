@@ -469,7 +469,7 @@
                         valueAccessor = valueAccessor.rules;
                     }
                     for (var prop in valueAccessor) {
-                        if (prop === 'value')
+                        if (prop === 'value' || prop === 'options')
                             continue;
                         if (ko.validate.rules[prop]) {
                             // rule exists
@@ -497,6 +497,11 @@
                 if (console)
                     console.error('ValidateError: Missing "value" bind parameter. Should be a "value", "textInput", "checked" or a "value" parameter inside the validate handler (validate: { value: observable, required: true })', element);
                 return;
+            }
+
+            // extend options from valueAccessor()
+            if (valueAccessor().hasOwnProperty('options')) {
+                options = $.extend(true, options, valueAccessor().options);
             }
 
             if (options.appendMessageToContainer)
