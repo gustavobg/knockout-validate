@@ -86,15 +86,16 @@
 
     // Configuration
     var defaults = {
-        useRequiredMarker: true,
-        classElementError: 'error',
-        classMessageError: 'error-message',
-        classHasRequired: 'has-required',
-        classHasError: 'has-error',
-        classGroupContainer: 'form-group',
-        appendMessageToContainer: false
-    },
-    kv = ko.validate;
+            useRequiredMarker: true,
+            classElementError: 'error',
+            classMessageError: 'error-message',
+            classHasRequired: 'has-required',
+            classHasError: 'has-error',
+            classGroupContainer: 'form-group',
+            appendMessageToContainer: true,
+            appendErrorsToRoot: false
+        },
+        kv = ko.validate;
 
     // make a copy  so we can use 'reset' later
     var configuration = ko.utils.extend({}, defaults);
@@ -552,7 +553,13 @@
             var value = ko.validate.utils.getBindingHandlerValue(valueAccessor, allBindings),
             // check if validation is in a component context
                 viewModel = bindingContext.$component ? bindingContext.$component : viewModel,
-                options = bindingContext.hasOwnProperty('validateOptions') ? $.extend(true, ko.validate.configuration, bindingContext.validateOptions) : ko.validate.configuration,
+                options = function () {
+                    if (bindingContext.hasOwnProperty('validateOptions')) {
+                        return $.extend(true, {}, ko.validate.configuration, bindingContext.validateOptions);
+                    } else {
+                        return ko.validate['configuration'];
+                    }
+                }(),
                 element = $(element),
                 setValid = function (elementId) {
                     viewModel.invalidFields.remove(elementId);
@@ -632,7 +639,7 @@
 
             // extend options from valueAccessor()
             if (valueAccessor().hasOwnProperty('options')) {
-                options = $.extend(true, options, valueAccessor().options);
+                options = $.extend(true, {}, options, valueAccessor().options);
             }
 
             if (options.appendMessageToContainer)
@@ -782,7 +789,6 @@
     //quick function to override rule messages
     ko.validate.localize = function (msgTranslations) {
         var rules = ko.validate.rules;
-
         //loop the properties in the object and assign the msg to the rule
         for (var ruleName in msgTranslations) {
             if (rules.hasOwnProperty(ruleName)) {
