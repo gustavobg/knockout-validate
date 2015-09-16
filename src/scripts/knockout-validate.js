@@ -756,7 +756,7 @@
     var _currentLocale;
 
     ko.validate.defineLocale = function(name, values) {
-        debugger;
+
         if (name && values) {
             _locales[name.toLowerCase()] = values;
             return values;
@@ -782,7 +782,7 @@
     //quick function to override rule messages
     ko.validate.localize = function (msgTranslations) {
         var rules = ko.validate.rules;
-        debugger;
+
         //loop the properties in the object and assign the msg to the rule
         for (var ruleName in msgTranslations) {
             if (rules.hasOwnProperty(ruleName)) {
