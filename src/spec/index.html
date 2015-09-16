@@ -22,7 +22,7 @@
         </div>
         <div class="form-group">
             <label for="age">Your age</label>
-            <input id="age" type="text" data-bind="value: age, validate: { digit: true }" />
+            <input id="age" type="text" data-bind="value: age, validate: { digit: true, min: 10, max: 25 }" />
         </div>
         <div data-bind="validateOptions: { appendMessageToContainer: true }">
             <div class="form-group">
@@ -184,6 +184,20 @@
         ok(!vm.isValid(), 'name is not valid');
         vm.name('John Smith Paul');
         ok(vm.isValid(), 'name is valid');
+    });
+    test('rule min', function () {
+        var vm = setupViewModel(true);
+        vm.age(9); // invalid age
+        ok(!vm.isValid(), 'min age is not valid');
+        vm.age(10);
+        ok(vm.isValid(), 'min age is valid');
+    });
+    test('rule max', function () {
+        var vm = setupViewModel(true);
+        vm.age(26); // invalid age
+        ok(!vm.isValid(), 'max age is not valid');
+        vm.age(25);
+        ok(vm.isValid(), 'max age is valid');
     });
     test('rule cep', function () {
         var cep = ko.observable(),

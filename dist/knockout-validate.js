@@ -30,6 +30,9 @@
             isArray: function (o) {
                 return o.isArray || Object.prototype.toString.call(o) === '[object Array]';
             },
+            isObject: function (o) {
+                return o !== null && typeof o === 'object';
+            },
             getValue: function (o) {
                 return ko.utils.unwrapObservable(o);
             },
@@ -55,6 +58,28 @@
                 if (val === "") {
                     return true;
                 }
+            },
+            formatMessage: function (message, params, observable) {
+                var utils = ko.validate.utils;
+                if (utils.isObject(params) && params.typeAttr) {
+                    params = params.value;
+                }
+                if (typeof message === 'function') {
+                    return message(params, observable);
+                }
+                var replacements = ko.unwrap(params);
+                if (replacements == null) {
+                    replacements = [];
+                }
+                if (!utils.isArray(replacements)) {
+                    replacements = [replacements];
+                }
+                return message.replace(/{(\d+)}/gi, function(match, index) {
+                    if (typeof replacements[index] !== 'undefined') {
+                        return replacements[index];
+                    }
+                    return match;
+                });
             }
         }
     }());
@@ -68,7 +93,8 @@
         classHasError: 'has-error',
         classGroupContainer: 'form-group',
         appendMessageToContainer: false
-    };
+    },
+    kv = ko.validate;
 
     // make a copy  so we can use 'reset' later
     var configuration = ko.utils.extend({}, defaults);
@@ -107,6 +133,112 @@
         },
         message: 'Obrigatório'
     };
+
+
+    function minMaxValidatorFactory(validatorName) {
+        var isMaxValidation = validatorName === "max";
+
+        return function (val, options) {
+            if (ko.validate.utils.isEmptyVal(val)) {
+                return true;
+            }
+
+            var comparisonValue, type;
+            if (options.typeAttr === undefined) {
+                // This validator is being called from javascript rather than
+                // being bound from markup
+                type = "text";
+                comparisonValue = options;
+            } else {
+                type = options.typeAttr;
+                comparisonValue = options.value;
+            }
+
+            // From http://www.w3.org/TR/2012/WD-html5-20121025/common-input-element-attributes.html#attr-input-min,
+            // if the value is parseable to a number, then the minimum should be numeric
+            if (!isNaN(comparisonValue) && !(comparisonValue instanceof Date)) {
+                type = "number";
+            }
+
+            var regex, valMatches, comparisonValueMatches;
+            switch (type.toLowerCase()) {
+                case "week":
+                    regex = /^(\d{4})-W(\d{2})$/;
+                    valMatches = val.match(regex);
+                    if (valMatches === null) {
+                        throw new Error("Invalid value for " + validatorName + " attribute for week input.  Should look like " +
+                            "'2000-W33' http://www.w3.org/TR/html-markup/input.week.html#input.week.attrs.min");
+                    }
+                    comparisonValueMatches = comparisonValue.match(regex);
+                    // If no regex matches were found, validation fails
+                    if (!comparisonValueMatches) {
+                        return false;
+                    }
+
+                    if (isMaxValidation) {
+                        return (valMatches[1] < comparisonValueMatches[1]) || // older year
+                                // same year, older week
+                            ((valMatches[1] === comparisonValueMatches[1]) && (valMatches[2] <= comparisonValueMatches[2]));
+                    } else {
+                        return (valMatches[1] > comparisonValueMatches[1]) || // newer year
+                                // same year, newer week
+                            ((valMatches[1] === comparisonValueMatches[1]) && (valMatches[2] >= comparisonValueMatches[2]));
+                    }
+                    break;
+
+                case "month":
+                    regex = /^(\d{4})-(\d{2})$/;
+                    valMatches = val.match(regex);
+                    if (valMatches === null) {
+                        throw new Error("Invalid value for " + validatorName + " attribute for month input.  Should look like " +
+                            "'2000-03' http://www.w3.org/TR/html-markup/input.month.html#input.month.attrs.min");
+                    }
+                    comparisonValueMatches = comparisonValue.match(regex);
+                    // If no regex matches were found, validation fails
+                    if (!comparisonValueMatches) {
+                        return false;
+                    }
+
+                    if (isMaxValidation) {
+                        return ((valMatches[1] < comparisonValueMatches[1]) || // older year
+                            // same year, older month
+                        ((valMatches[1] === comparisonValueMatches[1]) && (valMatches[2] <= comparisonValueMatches[2])));
+                    } else {
+                        return (valMatches[1] > comparisonValueMatches[1]) || // newer year
+                                // same year, newer month
+                            ((valMatches[1] === comparisonValueMatches[1]) && (valMatches[2] >= comparisonValueMatches[2]));
+                    }
+                    break;
+
+                case "number":
+                case "range":
+                    if (isMaxValidation) {
+                        return (!isNaN(val) && parseFloat(val) <= parseFloat(comparisonValue));
+                    } else {
+                        return (!isNaN(val) && parseFloat(val) >= parseFloat(comparisonValue));
+                    }
+                    break;
+
+                default:
+                    if (isMaxValidation) {
+                        return val <= comparisonValue;
+                    } else {
+                        return val >= comparisonValue;
+                    }
+            }
+        };
+    }
+
+    ko.validate.rules['min'] = {
+        validator: minMaxValidatorFactory("min"),
+        message: 'Insira um valor maior ou igual a {0}.'
+    };
+
+    ko.validate.rules['max'] = {
+        validator: minMaxValidatorFactory("max"),
+        message: 'Insira um valor menor ou igual a {0}.'
+    };
+
     ko.validate.rules['email'] = {
         validator: function (val, validate) {
             if (!validate) { return true; }
@@ -279,7 +411,6 @@
         validator: function (val, minLength) {
             if(ko.validate.utils.isEmptyVal(val)) { return true; }
             var normalizedVal = ko.validate.utils.isNumber(val) ? ('' + val) : val;
-            ko.validate.rules.minLength.message.replace('{0}', minLength);
             return normalizedVal.length >= minLength;
         },
         message: 'Insira pelo menos {0} caracter(es)'
@@ -289,7 +420,6 @@
         validator: function (val, maxLength) {
             if(ko.validate.utils.isEmptyVal(val)) { return true; }
             var normalizedVal = ko.validate.utils.isNumber(val) ? ('' + val) : val;
-            ko.validate.rules.maxLength.message.replace('{0}', maxLength);
             return normalizedVal.length <= maxLength;
         },
         message: 'Insira no máximo {0} caracter(es)'
@@ -463,7 +593,7 @@
                 validateRules = function (valueAccessor, value) {
                     // valid params format are: validate: { value: property1, required: true, notEquals: property2 }
                     // or: validate: { value: property1: rules: { required: true, notEquals: property2 } }
-                    var isValid = true, messages = [], param = '', hasRequiredRule = false;
+                    var isValid = true, messages = [], param = '', hasRequiredRule = false, message = null;
 
                     if (valueAccessor.hasOwnProperty('rules')) {
                         valueAccessor = valueAccessor.rules;
@@ -482,7 +612,8 @@
                             if (validate.hasOwnProperty('valid'))
                                 isValidRule = validate.valid;
                             if (!isValidRule) {
-                                messages.push(valueAccessor[prop] !== null && valueAccessor[prop].hasOwnProperty('message') ? valueAccessor[prop].message : validate.message);
+                                message = valueAccessor[prop] !== null && valueAccessor[prop].hasOwnProperty('message') ? valueAccessor[prop].message : validate.message;
+                                messages.push(ko.validate.utils.formatMessage(message, param));
                                 isValid = false;
                             }
                         } else {
@@ -618,5 +749,63 @@
         ko.validate.setValidationProperties(viewModel, options);
         ko.applyBindings(viewModel, rootNode);
     };
+
+    // Localization
+
+    var _locales = {};
+    var _currentLocale;
+
+    ko.validate.defineLocale = function(name, values) {
+        debugger;
+        if (name && values) {
+            _locales[name.toLowerCase()] = values;
+            return values;
+        }
+        return null;
+    };
+
+    ko.validate.locale = function(name) {
+        if (name) {
+            name = name.toLowerCase();
+
+            if (_locales.hasOwnProperty(name)) {
+                ko.validate.localize(_locales[name]);
+                _currentLocale = name;
+            }
+            else {
+                throw new Error('Localization ' + name + ' has not been loaded.');
+            }
+        }
+        return _currentLocale;
+    };
+
+    //quick function to override rule messages
+    ko.validate.localize = function (msgTranslations) {
+        var rules = ko.validate.rules;
+        debugger;
+        //loop the properties in the object and assign the msg to the rule
+        for (var ruleName in msgTranslations) {
+            if (rules.hasOwnProperty(ruleName)) {
+                rules[ruleName].message = msgTranslations[ruleName];
+            }
+        }
+    };
+
+    // Populate default locale (this will make en-US.js somewhat redundant)
+    (function() {
+
+        var localeData = {};
+        var rules = ko.validate.rules;
+
+        for (var ruleName in rules) {
+            if (rules.hasOwnProperty(ruleName)) {
+                localeData[ruleName] = rules[ruleName].message;
+            }
+        }
+        ko.validate.defineLocale('pt-br', localeData);
+    })();
+
+    // No need to invoke locale because the messages are already defined along with the rules for en-US
+    _currentLocale = 'pt-br';
 
 }));
