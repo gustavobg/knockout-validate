@@ -1,5 +1,5 @@
 {
-  "name": "knockout-validate",
+  "name": "knockout-validate-handler",
   "description": "Knockout form validator based on binding-handlers",
   "homepage": "https://github.com/gustavobg/knockout-validate",
   "author": "gustavobrittogebrim@gmail.com",
@@ -7,7 +7,7 @@
     "dist/knockout-validate.js",
     "dist/knockout-validate.css"
   ],
-  "version": "0.0.28",
+  "version": "0.0.29",
   "keywords": [
     "knockout",
     "validate",
