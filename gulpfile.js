@@ -11,6 +11,9 @@ var  gulp = require('gulp'),
      git = require('gulp-git'),
      uglify = require('gulp-uglify');
 
+// pass along gulp reference to have tasks imported
+require('gulp-release-tasks')(gulp);
+
 
 gulp.task('default', function() {
     // place code for your default task here
