@@ -15,6 +15,7 @@
     "gulp-release-tasks": "0.0.3",
     "gulp-rename": "^1.2.2",
     "gulp-sass": "^2.0.4",
+    "gulp-sync": "^0.1.4",
     "gulp-uglify": "^1.4.0",
     "gulp-watch": "^4.3.3"
   },
