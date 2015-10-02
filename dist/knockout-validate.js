@@ -285,8 +285,6 @@
         message: 'Insira somente dígitos'
     };
 
-
-
     ko.validate.rules['minLength'] = {
         validator: function (val, minLength) {
             if(ko.validate.utils.isEmptyVal(val)) { return true; }
@@ -295,7 +293,6 @@
         },
         message: 'Insira pelo menos {0} caracter(es)'
     };
-
 
     // brazilian postal code
     ko.validate.rules['cep'] = {
