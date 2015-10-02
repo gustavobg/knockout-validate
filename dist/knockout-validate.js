@@ -252,119 +252,6 @@
         },
         message: 'Endereço de e-mail inválido'
     };
-    ko.validate.rules['cpf'] = {
-        message: 'CPF inválido.',
-        validator: function (cpf, params) {
-            if (ko.validate.utils.isEmptyVal(cpf)) return true;
-
-            var numeros, digitos, soma, i, resultado, digitos_iguais;
-            cpf = cpf.replace(/(\.)|(\-)|(\/)/g, '');
-
-            digitos_iguais = 1;
-            if (cpf.length < 11)
-                return false;
-            for (i = 0; i < cpf.length - 1; i++)
-                if (cpf.charAt(i) != cpf.charAt(i + 1)) {
-                    digitos_iguais = 0;
-                    break;
-                }
-            if (!digitos_iguais) {
-                numeros = cpf.substring(0, 9);
-                digitos = cpf.substring(9);
-                soma = 0;
-                for (i = 10; i > 1; i--)
-                    soma += numeros.charAt(10 - i) * i;
-                resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-                if (resultado != digitos.charAt(0))
-                    return false;
-                numeros = cpf.substring(0, 10);
-                soma = 0;
-                for (i = 11; i > 1; i--)
-                    soma += numeros.charAt(11 - i) * i;
-                resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-                if (resultado != digitos.charAt(1))
-                    return false;
-                return true;
-            }
-            else
-                return false;
-        }
-    };
-    ko.validate.rules['cnpj'] = {
-        message: 'CNPJ inválido.',
-        validator: function (cnpj, params) {
-            if (ko.validate.utils.isEmptyVal(cnpj)) return true;
-
-            var numeros, digitos, soma, i, resultado, pos, tamanho, digitos_iguais;
-            cnpj = cnpj.replace(/(\.)|(\-)|(\/)/g, '');
-
-            digitos_iguais = 1;
-            if (cnpj.length < 14 && cnpj.length < 15)
-                return false;
-            for (i = 0; i < cnpj.length - 1; i++)
-                if (cnpj.charAt(i) != cnpj.charAt(i + 1)) {
-                    digitos_iguais = 0;
-                    break;
-                }
-            if (!digitos_iguais) {
-                tamanho = cnpj.length - 2
-                numeros = cnpj.substring(0, tamanho);
-                digitos = cnpj.substring(tamanho);
-                soma = 0;
-                pos = tamanho - 7;
-                for (i = tamanho; i >= 1; i--) {
-                    soma += numeros.charAt(tamanho - i) * pos--;
-                    if (pos < 2)
-                        pos = 9;
-                }
-                resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-                if (resultado != digitos.charAt(0))
-                    return false;
-                tamanho = tamanho + 1;
-                numeros = cnpj.substring(0, tamanho);
-                soma = 0;
-                pos = tamanho - 7;
-                for (i = tamanho; i >= 1; i--) {
-                    soma += numeros.charAt(tamanho - i) * pos--;
-                    if (pos < 2)
-                        pos = 9;
-                }
-                resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-                if (resultado != digitos.charAt(1))
-                    return false;
-                return true;
-            }
-            else
-                return false;
-        }
-    };
-    // validação Usuário
-    ko.validate.rules['validarUsuario'] = {
-        valid: false,
-        message: 'Nome de usuário já existe, escolha outro nome.',
-        validator: function (val, idPessoa) {
-            if (ko.validate.utils.isEmptyVal(val)) return true;
-            ko.computed(function () {
-                $.ajax({
-                    url: '/Seguranca/Usuario/ValidarDuplicado',
-                    data: { login: ko.utils.unwrapObservable(val), idPessoa: ko.utils.unwrapObservable(idPessoa) },
-                    async: false
-                }).success(function (result) {
-                    ko.validate.rules.validarUsuario.valid = result.Sucesso;
-                });
-            });
-        }
-    };
-
-    // validação Inscrição Estadual
-    ko.validate.rules['inscricaoEstadual'] = {
-        message: 'Inscrição Estadual inválida.',
-        validator: function (val, validate) {
-            if (!validate) { return true; }
-            if (ko.validate.utils.isEmptyVal(value)) return true;
-        }
-    };
-
 
     ko.validate.rules['date'] = {
         validator: function (value, validate) {
@@ -506,8 +393,10 @@
                         element.next().show();
 
                     if (index === 0) {
-                        if (element.is(':visible'))
+                        if (element.is(':visible')) {
+                            $(window).scrollTop(element.offset().top);
                             element.focus();
+                        }
                         else
                             formGroup[0].scrollIntoView({ behavior: "smooth"});
                     }

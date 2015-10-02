@@ -338,33 +338,6 @@
                 return false;
         }
     };
-    // validação Usuário
-    ko.validate.rules['validarUsuario'] = {
-        valid: false,
-        message: 'Nome de usuário já existe, escolha outro nome.',
-        validator: function (val, idPessoa) {
-            if (ko.validate.utils.isEmptyVal(val)) return true;
-            ko.computed(function () {
-                $.ajax({
-                    url: '/Seguranca/Usuario/ValidarDuplicado',
-                    data: { login: ko.utils.unwrapObservable(val), idPessoa: ko.utils.unwrapObservable(idPessoa) },
-                    async: false
-                }).success(function (result) {
-                    ko.validate.rules.validarUsuario.valid = result.Sucesso;
-                });
-            });
-        }
-    };
-
-    // validação Inscrição Estadual
-    ko.validate.rules['inscricaoEstadual'] = {
-        message: 'Inscrição Estadual inválida.',
-        validator: function (val, validate) {
-            if (!validate) { return true; }
-            if (ko.validate.utils.isEmptyVal(value)) return true;
-        }
-    };
-
 
     ko.validate.rules['date'] = {
         validator: function (value, validate) {
@@ -398,15 +371,7 @@
         message: 'Insira somente dígitos'
     };
 
-    ko.validate.rules['cep'] = {
-        validator: function (value, validate) {
-            if (!validate) return true;
-            if (ko.validate.utils.isEmptyVal(value)) return true;
-            value = value.replace(/\D/g, "");
-            return value.length === 8;
-        },
-        message: 'CEP inválido'
-    };
+
 
     ko.validate.rules['minLength'] = {
         validator: function (val, minLength) {
@@ -415,6 +380,18 @@
             return normalizedVal.length >= minLength;
         },
         message: 'Insira pelo menos {0} caracter(es)'
+    };
+
+
+    // brazilian postal code
+    ko.validate.rules['cep'] = {
+        validator: function (value, validate) {
+            if (!validate) return true;
+            if (ko.validate.utils.isEmptyVal(value)) return true;
+            value = value.replace(/\D/g, "");
+            return value.length === 8;
+        },
+        message: 'CEP inválido'
     };
 
     ko.validate.rules['maxLength'] = {
@@ -470,7 +447,6 @@
         },
         message: 'Valores não podem ser iguais'
     };
-
 
     ko.validate['setValidationProperties'] = function (vm) {
         var validateModel = function () {
