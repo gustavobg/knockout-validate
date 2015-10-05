@@ -1,5 +1,6 @@
-# knockout-validate
+#knockout-validate
 [![Build Status](https://travis-ci.org/gustavobg/knockout-validate.svg)](https://travis-ci.org/gustavobg/knockout-validate)
+
 KnockoutJS BindingHandler for ViewModel Validation
 
 Based on https://github.com/Knockout-Contrib/Knockout-Validation.
