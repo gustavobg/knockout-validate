@@ -14,7 +14,7 @@
     <form id="examples" data-bind="validateForm: { submitHandler: Save }">
         <div class="form-group">
             <label for="name">Name</label>
-            <input id="name" type="text" data-bind="value: name, validate: { required: true }" />
+            <input id="name" type="text" data-bind="value: name, validate: { required: true, minLength: 3, maxLength: 15 }" />
         </div>
         <div class="form-group">
             <label for="email">E-mail</label>
@@ -22,15 +22,17 @@
         </div>
         <div class="form-group">
             <label for="age">Your age</label>
-            <input id="age" type="text" data-bind="value: age, validate: { digit: true }" />
+            <input id="age" type="text" data-bind="value: age, validate: { digit: true, min: 10, max: 25 }" />
         </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input id="password" type="password" data-bind="value: password, validate: { required: true }" />
-        </div>
-        <div class="form-group">
-            <label for="confirm_password">Confirm Password</label>
-            <input id="confirm_password" type="password" data-bind="value: confirm_password, validate: { required: true, equal: password }" />
+        <div data-bind="validateOptions: { appendMessageToContainer: true }">
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input id="password" type="password" data-bind="value: password, validate: { required: true }" />
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input id="confirm_password" type="password" data-bind="value: confirm_password, validate: { required: true, equal: password }" />
+            </div>
         </div>
 
         <input type="submit" class="btn btn-success" value="Submit">
@@ -104,7 +106,7 @@
     }
     test('validator configuration', function () {
         ko.validate.configuration.useRequiredMarker = false;
-        ko.validate.configuration.reset();
+        ko.validate.utils.resetConfig();
         ok(ko.validate.configuration.useRequiredMarker, 'defaults resets values');
     });
     test('validator methods', function () {
@@ -146,6 +148,16 @@
         ko.applyBindingsToNode(nameElement, { value: name, validate: { required: { param: true, message: '123' } } }, vm);
         ok(vm.invalidFields().indexOf('name') >= 0, 'param set to true correctly');
     });
+    test('appendMessageToContainer parameter', function () {
+        var vm = setupViewModel(true),
+            passwordElement = document.getElementById('password'), // inside validateOptions scope
+            nameElement = document.getElementById('name'), // outside validateOptions scope
+            o = $(passwordElement).data('options'),
+            oName = $(nameElement).data('options');
+
+        ok(o.appendMessageToContainer === ko.validate.configuration.appendMessageToContainer, 'param appendMessageToContainer set to defaultValue correctly, because it\'s outside validateOptions scope');
+        ok(oName.appendMessageToContainer, 'param appendMessageToContainer set to true correctly, because it\'s inside validateOptions scope');
+    });
     test('rule equal', function () {
         var vm = setupViewModel(true);
         ok(vm.isValid(), 'params are equal');
@@ -158,6 +170,34 @@
         ok(!vm.isValid(), 'e-mail is not valid');
         vm.email('teste@aaaa.com');
         ok(vm.isValid(), 'e-mail is valid');
+    });
+    test('rule minLength', function () {
+        var vm = setupViewModel(true);
+        vm.name('Ow'); // invalid name length
+        ok(!vm.isValid(), 'name is not valid');
+        vm.name('Owl');
+        ok(vm.isValid(), 'name is valid');
+    });
+    test('rule maxLength', function () {
+        var vm = setupViewModel(true);
+        vm.name('John Smith Alexander Paul'); // invalid name length
+        ok(!vm.isValid(), 'name is not valid');
+        vm.name('John Smith Paul');
+        ok(vm.isValid(), 'name is valid');
+    });
+    test('rule min', function () {
+        var vm = setupViewModel(true);
+        vm.age(9); // invalid age
+        ok(!vm.isValid(), 'min age is not valid');
+        vm.age(10);
+        ok(vm.isValid(), 'min age is valid');
+    });
+    test('rule max', function () {
+        var vm = setupViewModel(true);
+        vm.age(26); // invalid age
+        ok(!vm.isValid(), 'max age is not valid');
+        vm.age(25);
+        ok(vm.isValid(), 'max age is valid');
     });
     test('rule cep', function () {
         var cep = ko.observable(),

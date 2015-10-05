@@ -1,8 +1,9 @@
 requirejs.config({
-    baseUrl: 'components',
+    baseUrl: '',
     paths: {
         'knockout-validate': '../scripts/knockout-validate',
-        'knockout': 'knockout/dist/knockout',
-        'jquery': 'jquery/dist/jquery.min'
+        'knockout-validate-localization': '../scripts/localization/en-US',
+        'ko': 'components/knockout/dist/knockout',
+        'jquery': 'components/jquery/dist/jquery.min'
     }
 });

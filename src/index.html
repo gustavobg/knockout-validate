@@ -14,25 +14,38 @@
         <form id="examples" data-bind="validateForm: { submitHandler: Save }">
             <div class="form-group">
                 <label for="name">Name</label>
-                <input id="name" class="form-control" type="text" data-bind="value: name, validate: { required: true }" />
+                <input id="name" class="form-control" type="text" data-bind="value: name, validate: { required: true, minLength: 2, maxLength: 15 }" />
             </div>
             <div class="form-group">
                 <label for="email">E-mail</label>
                 <input id="email" class="form-control" type="text" data-bind="value: email, validate: { email: true }" />
             </div>
             <div class="form-group">
+                <label for="valueMinMax">Value between 5 and 10</label>
+                <input id="valueMinMax" class="form-control" type="text" data-bind="value: valueMinMax, validate: { min: 5, max: 10 }" />
+            </div>
+            <div class="form-group">
                 <label for="age">Your age</label>
-                <input id="age" class="form-control" type="text" data-bind="value: age, validate: { digit: true, min: 18 }" />
+                <input id="age" class="form-control" type="text" data-bind="value: age, validate: { digit: true }" />
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input id="password" class="form-control" type="password" data-bind="value: password, validate: { required: true }" />
+            <div data-bind="validateOptions: { appendMessageToContainer: true }">
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-group">
+                        <div class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></div>
+                        <input id="password" class="form-control" type="password" data-bind="value: password, validate: { required: true }" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-group">
+                        <label for="confirm_password">Confirm Password</label>
+                        <div class="input-group">
+                            <div class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></div>
+                            <input id="confirm_password" class="form-control" type="password" data-bind="value: confirm_password, validate: { required: true, equal: password }" />
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="confirm_password">Confirm Password</label>
-                <input id="confirm_password" class="form-control" type="password" data-bind="value: confirm_password, validate: { required: true, equal: password }" />
-            </div>
-
             <input type="submit" class="btn btn-success" value="Submit">
 
         </form>
@@ -46,7 +59,10 @@
     <!--<script src="scripts/knockout-validate.js"></script>-->
 
 <script type="text/javascript">
-    requirejs(['knockout', 'knockout-validate'], function(ko) {
+    requirejs(['ko', 'knockout-validate', 'knockout-validate-localization'], function(ko) {
+
+        ko.validate.locale('pt-BR');
+
         var vm = function () {
             var self = this;
 
@@ -54,6 +70,7 @@
             this.age = ko.observable();
             this.password = ko.observable();
             this.email = ko.observable();
+            this.valueMinMax = ko.observable();
             this.confirm_password = ko.observable();
 
             this.Save = function () {

@@ -9,12 +9,19 @@ var  gulp = require('gulp'),
      bump = require('gulp-bump'),
      minifyCss = require('gulp-minify-css'),
      git = require('gulp-git'),
-     uglify = require('gulp-uglify');
+     uglify = require('gulp-uglify'),
+     gulpsync = require('gulp-sync')(gulp);
 
+// pass along gulp reference to have tasks imported
+require('gulp-release-tasks')(gulp);
 
-gulp.task('default', function() {
-    // place code for your default task here
-});
+//    https://www.npmjs.com/package/gulp-release-tasks
+//    gulp tag	v0.0.1 -> v0.0.2 + commit + tag + push
+//    gulp tag --minor	v0.0.1 -> v0.1.0 + commit + tag + push
+//    gulp tag --major	v0.0.1 -> v1.0.1 + commit + tag + push
+//    gulp bump	v0.0.1 -> v0.0.2
+//    gulp bump --minor	v0.0.1 -> v0.1.0
+//    gulp bump --major	v0.0.1 -> v1.0.1
 
 // Static server
 gulp.task('serve', function() {
@@ -50,26 +57,25 @@ gulp.task('build:css', function() {
 
 gulp.task('build', ['build:css', 'build:js']);
 
-gulp.task('bump', ['build'], function () {
-    return gulp.src(['./package.json', './bower.json'])
-        .pipe(bump())
-        .pipe(gulp.dest('./'));
-});
+//gulp.task('bump', ['build'], function () {
+//    return gulp.src(['./package.json', './bower.json'])
+//        .pipe(bump())
+//        .pipe(gulp.dest('./'));
+//});
 
-gulp.task('tag', ['bump'], function () {
-    var pkg = require('./package.json');
-    var v = 'v' + pkg.version;
-    var message = 'Release ' + v;
-
-    return gulp.src('./')
-        .pipe(git.add({args: '--all'}))
-        .pipe(git.commit(message))
-        .pipe(git.tag(v, message))
-        .pipe(git.push('origin', 'master', ''))
-        .pipe(gulp.dest('./'));
-});
-
-gulp.task('release', ['tag']);
+//gulp.task('tag', ['bump'], function () {
+//    var pkg = require('./package.json');
+//    var v = 'v' + pkg.version;
+//    var message = 'Release ' + v;
+//
+//    return gulp.src('./')
+//        .pipe(git.add({args: '--all'}))
+//        .pipe(git.commit(message))
+//        .pipe(git.tag(v, message))
+//        .pipe(git.push('origin', 'master', ''))
+//        .pipe(gulp.dest('./'));
+//});
+//gulp.task('release', ['tag']);
 
 // test
 gulp.task('test', function() {
@@ -85,6 +91,5 @@ gulp.task('sass', function() {
         .pipe(browserSync.stream());
 });
 
-gulp.task('default', ['serve']);
-
+gulp.task('default', gulpsync.sync(['clean', 'test', ['build']]));
 gulp.task('ci', ['test', 'build']);

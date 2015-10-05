@@ -1,14 +1,10 @@
-/*globals require: false, exports: false, define: false, ko: false */
-
 (function (factory) {
-    // Module systems magic dance.
-
     if (typeof require === "function" && typeof exports === "object" && typeof module === "object") {
         // CommonJS or Node: hard-coded dependency on "knockout"
-        factory(require("jquery"), require("knockout"), exports);
+        factory(require("jquery"), require("ko"), exports);
     } else if (typeof define === "function" && define["amd"]) {
         // AMD anonymous module with hard-coded dependency on "knockout"
-        define(["jquery", "knockout", "exports"], factory);
+        define(["jquery", "ko", "exports"], factory);
     } else {
         // <script> tag: use the global `ko` object, attaching a `mapping` property
         factory(jQuery, ko, ko.validate = {});
@@ -34,6 +30,9 @@
             isArray: function (o) {
                 return o.isArray || Object.prototype.toString.call(o) === '[object Array]';
             },
+            isObject: function (o) {
+                return o !== null && typeof o === 'object';
+            },
             getValue: function (o) {
                 return ko.utils.unwrapObservable(o);
             },
@@ -46,6 +45,9 @@
             setAttribute: function (element, attr, value) {
                 return element.setAttribute(attr, value);
             },
+            isNumber: function(o) {
+                return !isNaN(o);
+            },
             isEmptyVal: function (val) {
                 if (val === undefined) {
                     return true;
@@ -56,23 +58,49 @@
                 if (val === "") {
                     return true;
                 }
+            },
+            formatMessage: function (message, params, observable) {
+                var utils = ko.validate.utils;
+                if (utils.isObject(params) && params.typeAttr) {
+                    params = params.value;
+                }
+                if (typeof message === 'function') {
+                    return message(params, observable);
+                }
+                var replacements = ko.unwrap(params);
+                if (replacements == null) {
+                    replacements = [];
+                }
+                if (!utils.isArray(replacements)) {
+                    replacements = [replacements];
+                }
+                return message.replace(/{(\d+)}/gi, function(match, index) {
+                    if (typeof replacements[index] !== 'undefined') {
+                        return replacements[index];
+                    }
+                    return match;
+                });
             }
         }
     }());
 
     // Configuration
     var defaults = {
-        useRequiredMarker: true,
-        classElementError: 'error',
-        classMessageError: 'error-message',
-        classHasRequired: 'has-required',
-        classHasError: 'has-error'
-    };
+            useRequiredMarker: true,
+            classElementError: 'error',
+            classMessageError: 'error-message',
+            classHasRequired: 'has-required',
+            classHasError: 'has-error',
+            classGroupContainer: 'form-group',
+            appendMessageToContainer: true,
+            appendErrorsToRoot: false
+        },
+        kv = ko.validate;
 
     // make a copy  so we can use 'reset' later
     var configuration = ko.utils.extend({}, defaults);
 
-    configuration.reset = function () {
+    ko.validate.utils.resetConfig = function () {
         ko.utils.extend(configuration, defaults);
     };
     ko.validate.configuration = configuration;
@@ -106,6 +134,112 @@
         },
         message: 'Obrigatório'
     };
+
+
+    function minMaxValidatorFactory(validatorName) {
+        var isMaxValidation = validatorName === "max";
+
+        return function (val, options) {
+            if (ko.validate.utils.isEmptyVal(val)) {
+                return true;
+            }
+
+            var comparisonValue, type;
+            if (options.typeAttr === undefined) {
+                // This validator is being called from javascript rather than
+                // being bound from markup
+                type = "text";
+                comparisonValue = options;
+            } else {
+                type = options.typeAttr;
+                comparisonValue = options.value;
+            }
+
+            // From http://www.w3.org/TR/2012/WD-html5-20121025/common-input-element-attributes.html#attr-input-min,
+            // if the value is parseable to a number, then the minimum should be numeric
+            if (!isNaN(comparisonValue) && !(comparisonValue instanceof Date)) {
+                type = "number";
+            }
+
+            var regex, valMatches, comparisonValueMatches;
+            switch (type.toLowerCase()) {
+                case "week":
+                    regex = /^(\d{4})-W(\d{2})$/;
+                    valMatches = val.match(regex);
+                    if (valMatches === null) {
+                        throw new Error("Invalid value for " + validatorName + " attribute for week input.  Should look like " +
+                            "'2000-W33' http://www.w3.org/TR/html-markup/input.week.html#input.week.attrs.min");
+                    }
+                    comparisonValueMatches = comparisonValue.match(regex);
+                    // If no regex matches were found, validation fails
+                    if (!comparisonValueMatches) {
+                        return false;
+                    }
+
+                    if (isMaxValidation) {
+                        return (valMatches[1] < comparisonValueMatches[1]) || // older year
+                                // same year, older week
+                            ((valMatches[1] === comparisonValueMatches[1]) && (valMatches[2] <= comparisonValueMatches[2]));
+                    } else {
+                        return (valMatches[1] > comparisonValueMatches[1]) || // newer year
+                                // same year, newer week
+                            ((valMatches[1] === comparisonValueMatches[1]) && (valMatches[2] >= comparisonValueMatches[2]));
+                    }
+                    break;
+
+                case "month":
+                    regex = /^(\d{4})-(\d{2})$/;
+                    valMatches = val.match(regex);
+                    if (valMatches === null) {
+                        throw new Error("Invalid value for " + validatorName + " attribute for month input.  Should look like " +
+                            "'2000-03' http://www.w3.org/TR/html-markup/input.month.html#input.month.attrs.min");
+                    }
+                    comparisonValueMatches = comparisonValue.match(regex);
+                    // If no regex matches were found, validation fails
+                    if (!comparisonValueMatches) {
+                        return false;
+                    }
+
+                    if (isMaxValidation) {
+                        return ((valMatches[1] < comparisonValueMatches[1]) || // older year
+                            // same year, older month
+                        ((valMatches[1] === comparisonValueMatches[1]) && (valMatches[2] <= comparisonValueMatches[2])));
+                    } else {
+                        return (valMatches[1] > comparisonValueMatches[1]) || // newer year
+                                // same year, newer month
+                            ((valMatches[1] === comparisonValueMatches[1]) && (valMatches[2] >= comparisonValueMatches[2]));
+                    }
+                    break;
+
+                case "number":
+                case "range":
+                    if (isMaxValidation) {
+                        return (!isNaN(val) && parseFloat(val) <= parseFloat(comparisonValue));
+                    } else {
+                        return (!isNaN(val) && parseFloat(val) >= parseFloat(comparisonValue));
+                    }
+                    break;
+
+                default:
+                    if (isMaxValidation) {
+                        return val <= comparisonValue;
+                    } else {
+                        return val >= comparisonValue;
+                    }
+            }
+        };
+    }
+
+    ko.validate.rules['min'] = {
+        validator: minMaxValidatorFactory("min"),
+        message: 'Insira um valor maior ou igual a {0}.'
+    };
+
+    ko.validate.rules['max'] = {
+        validator: minMaxValidatorFactory("max"),
+        message: 'Insira um valor menor ou igual a {0}.'
+    };
+
     ko.validate.rules['email'] = {
         validator: function (val, validate) {
             if (!validate) { return true; }
@@ -118,119 +252,6 @@
         },
         message: 'Endereço de e-mail inválido'
     };
-    ko.validate.rules['cpf'] = {
-        message: 'CPF inválido.',
-        validator: function (cpf, params) {
-            if (ko.validate.utils.isEmptyVal(cpf)) return true;
-
-            var numeros, digitos, soma, i, resultado, digitos_iguais;
-            cpf = cpf.replace(/(\.)|(\-)|(\/)/g, '');
-
-            digitos_iguais = 1;
-            if (cpf.length < 11)
-                return false;
-            for (i = 0; i < cpf.length - 1; i++)
-                if (cpf.charAt(i) != cpf.charAt(i + 1)) {
-                    digitos_iguais = 0;
-                    break;
-                }
-            if (!digitos_iguais) {
-                numeros = cpf.substring(0, 9);
-                digitos = cpf.substring(9);
-                soma = 0;
-                for (i = 10; i > 1; i--)
-                    soma += numeros.charAt(10 - i) * i;
-                resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-                if (resultado != digitos.charAt(0))
-                    return false;
-                numeros = cpf.substring(0, 10);
-                soma = 0;
-                for (i = 11; i > 1; i--)
-                    soma += numeros.charAt(11 - i) * i;
-                resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-                if (resultado != digitos.charAt(1))
-                    return false;
-                return true;
-            }
-            else
-                return false;
-        }
-    };
-    ko.validate.rules['cnpj'] = {
-        message: 'CNPJ inválido.',
-        validator: function (cnpj, params) {
-            if (ko.validate.utils.isEmptyVal(cnpj)) return true;
-
-            var numeros, digitos, soma, i, resultado, pos, tamanho, digitos_iguais;
-            cnpj = cnpj.replace(/(\.)|(\-)|(\/)/g, '');
-
-            digitos_iguais = 1;
-            if (cnpj.length < 14 && cnpj.length < 15)
-                return false;
-            for (i = 0; i < cnpj.length - 1; i++)
-                if (cnpj.charAt(i) != cnpj.charAt(i + 1)) {
-                    digitos_iguais = 0;
-                    break;
-                }
-            if (!digitos_iguais) {
-                tamanho = cnpj.length - 2
-                numeros = cnpj.substring(0, tamanho);
-                digitos = cnpj.substring(tamanho);
-                soma = 0;
-                pos = tamanho - 7;
-                for (i = tamanho; i >= 1; i--) {
-                    soma += numeros.charAt(tamanho - i) * pos--;
-                    if (pos < 2)
-                        pos = 9;
-                }
-                resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-                if (resultado != digitos.charAt(0))
-                    return false;
-                tamanho = tamanho + 1;
-                numeros = cnpj.substring(0, tamanho);
-                soma = 0;
-                pos = tamanho - 7;
-                for (i = tamanho; i >= 1; i--) {
-                    soma += numeros.charAt(tamanho - i) * pos--;
-                    if (pos < 2)
-                        pos = 9;
-                }
-                resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
-                if (resultado != digitos.charAt(1))
-                    return false;
-                return true;
-            }
-            else
-                return false;
-        }
-    };
-    // validação Usuário
-    ko.validate.rules['validarUsuario'] = {
-        valid: false,
-        message: 'Nome de usuário já existe, escolha outro nome.',
-        validator: function (val, idPessoa) {
-            if (ko.validate.utils.isEmptyVal(val)) return true;
-            ko.computed(function () {
-                $.ajax({
-                    url: '/Seguranca/Usuario/ValidarDuplicado',
-                    data: { login: ko.utils.unwrapObservable(val), idPessoa: ko.utils.unwrapObservable(idPessoa) },
-                    async: false
-                }).success(function (result) {
-                    ko.validate.rules.validarUsuario.valid = result.Sucesso;
-                });
-            });
-        }
-    };
-
-    // validação Inscrição Estadual
-    ko.validate.rules['inscricaoEstadual'] = {
-        message: 'Inscrição Estadual inválida.',
-        validator: function (val, validate) {
-            if (!validate) { return true; }
-            if (ko.validate.utils.isEmptyVal(value)) return true;
-        }
-    };
-
 
     ko.validate.rules['date'] = {
         validator: function (value, validate) {
@@ -264,6 +285,16 @@
         message: 'Insira somente dígitos'
     };
 
+    ko.validate.rules['minLength'] = {
+        validator: function (val, minLength) {
+            if(ko.validate.utils.isEmptyVal(val)) { return true; }
+            var normalizedVal = ko.validate.utils.isNumber(val) ? ('' + val) : val;
+            return normalizedVal.length >= minLength;
+        },
+        message: 'Insira pelo menos {0} caracter(es)'
+    };
+
+    // brazilian postal code
     ko.validate.rules['cep'] = {
         validator: function (value, validate) {
             if (!validate) return true;
@@ -272,6 +303,22 @@
             return value.length === 8;
         },
         message: 'CEP inválido'
+    };
+
+    ko.validate.rules['maxLength'] = {
+        validator: function (val, maxLength) {
+            if(ko.validate.utils.isEmptyVal(val)) { return true; }
+            var normalizedVal = ko.validate.utils.isNumber(val) ? ('' + val) : val;
+            return normalizedVal.length <= maxLength;
+        },
+        message: 'Insira no máximo {0} caracter(es)'
+    };
+
+    ko.validate.rules['pattern'] = {
+        validator: function (val, regex) {
+            return ko.validate.utils.isEmptyVal(val) || val.toString().match(regex) !== null;
+        },
+        message: 'Valor inválido'
     };
 
     ko.validate.rules['phone'] = {
@@ -312,11 +359,9 @@
         message: 'Valores não podem ser iguais'
     };
 
-
-    ko.validate['setValidationProperties'] = function (vm, options) {
+    ko.validate['setValidationProperties'] = function (vm) {
         var validateModel = function () {
             var self = this;
-            this.numberOfValidateFields = ko.observable(0);
             this.invalidFields = ko.observableArray([]);
             this.isValid = ko.computed(function () {
                 return self.invalidFields().length === 0;
@@ -336,10 +381,16 @@
                 }
                 ko.utils.arrayForEach(self.invalidFields(), function (elementId, index) {
                     //var options = ko.validate.utils.getConfigOptions(element);
+
                     var element = $('#' + elementId),
-                        formGroup = element.closest('.form-group').addClass(options.classHasError);
-                    element.addClass(element.data('errorClass'));
-                    element.next().show();
+                        o = element.data('options'),
+                        formGroup = element.closest('.' + o.classGroupContainer).addClass(o.classHasError);
+
+                    element.addClass(o.classElementError);
+                    if (o.appendMessageToContainer)
+                        formGroup.find('.' + o.classMessageError).show();
+                    else
+                        element.next().show();
 
                     if (index === 0) {
                         if (element.is(':visible'))
@@ -389,45 +440,60 @@
             var value = ko.validate.utils.getBindingHandlerValue(valueAccessor, allBindings),
             // check if validation is in a component context
                 viewModel = bindingContext.$component ? bindingContext.$component : viewModel,
-                options = bindingContext.hasOwnProperty('validateOptions') ? $.extend({}, ko.validate.configuration, bindingContext.validateOptions) : ko.validate.configuration,
+                options = function () {
+                    if (bindingContext.hasOwnProperty('validateOptions')) {
+                        return $.extend(true, {}, ko.validate.configuration, bindingContext.validateOptions);
+                    } else {
+                        return ko.validate['configuration'];
+                    }
+                }(),
                 element = $(element),
-                elementMessage = $('<span class="' + options.classMessageError + '" style="display: none"></span>').insertAfter(element),
                 setValid = function (elementId) {
                     viewModel.invalidFields.remove(elementId);
                 },
                 setRequiredMarker = function (element) {
-                    element.closest('.form-group').addClass(options.classHasRequired);
+                    element.closest('.' + options.classGroupContainer).addClass(options.classHasRequired);
                 },
                 removeRequiredMarker = function (element) {
-                    element.closest('.form-group').removeClass(options.classHasRequired);
+                    element.closest('.' + options.classGroupContainer).removeClass(options.classHasRequired);
                 },
                 setMessage = function (element, message) {
-                    element.next().text(message);
-                    element.data('errorClass', options.classElementError);
+                    if (options.appendMessageToContainer)
+                        element.closest('.' + options.classGroupContainer).find('.' + options.classMessageError).text(message);
+                    else
+                        element.next().text(message);
                 },
                 setInvalid = function (elementId) {
                     viewModel.invalidFields.push(elementId);
                 },
                 hideError = function (element) {
-                    element.closest('.form-group').removeClass(options.classHasError);
+                    var formGroup = element.closest('.' + options.classGroupContainer);
+                    formGroup.removeClass(options.classHasError);
                     element.removeClass(options.classElementError);
-                    element.next().hide();
+                    if (options.appendMessageToContainer)
+                        formGroup.find('.' + options.classMessageError).hide();
+                    else
+                        element.next().hide();
                 },
                 showError = function (element, message) {
-                    element.closest('.form-group').addClass(options.classHasError);
+                    var formGroup = element.closest('.' + options.classGroupContainer);
+                    formGroup.addClass(options.classHasError);
                     element.addClass(options.classElementError);
-                    element.next().show();
+                    if (options.appendMessageToContainer)
+                        formGroup.find('.' + options.classMessageError).show();
+                    else
+                        element.next().show();
                 },
                 validateRules = function (valueAccessor, value) {
                     // valid params format are: validate: { value: property1, required: true, notEquals: property2 }
                     // or: validate: { value: property1: rules: { required: true, notEquals: property2 } }
-                    var isValid = true, messages = [], param = '', hasRequiredRule = false;
+                    var isValid = true, messages = [], param = '', hasRequiredRule = false, message = null;
 
                     if (valueAccessor.hasOwnProperty('rules')) {
                         valueAccessor = valueAccessor.rules;
                     }
                     for (var prop in valueAccessor) {
-                        if (prop === 'value')
+                        if (prop === 'value' || prop === 'options')
                             continue;
                         if (ko.validate.rules[prop]) {
                             // rule exists
@@ -440,7 +506,8 @@
                             if (validate.hasOwnProperty('valid'))
                                 isValidRule = validate.valid;
                             if (!isValidRule) {
-                                messages.push(valueAccessor[prop] !== null && valueAccessor[prop].hasOwnProperty('message') ? valueAccessor[prop].message : validate.message);
+                                message = valueAccessor[prop] !== null && valueAccessor[prop].hasOwnProperty('message') ? valueAccessor[prop].message : validate.message;
+                                messages.push(ko.validate.utils.formatMessage(message, param));
                                 isValid = false;
                             }
                         } else {
@@ -457,10 +524,25 @@
                 return;
             }
 
+            // extend options from valueAccessor()
+            if (valueAccessor().hasOwnProperty('options')) {
+                options = $.extend(true, {}, options, valueAccessor().options);
+            }
+
+            if (options.appendMessageToContainer)
+                $('<span class="' + options.classMessageError + '" style="display: none"></span>').appendTo(element.closest('.' + options.classGroupContainer));
+            else
+                $('<span class="' + options.classMessageError + '" style="display: none"></span>').insertAfter(element);
+
+            // set element options parameters
+            element.data('options', options);
+
             // append error list to root viewmodel
             if (options.hasOwnProperty('appendErrorsToRoot')) {
                 if (options.appendErrorsToRoot)
                     viewModel = bindingContext.$root;
+            } else if (options.hasOwnProperty('appendErrorsToContext')) {
+                viewModel = bindingContext[options.appendErrorsToContext];
             }
 
             // check if viewmodel context has validation properties
@@ -529,7 +611,8 @@
                     };
                     $el.on('keydown', function (e) {
                         // blur elements to trigger viewmodel changes
-                        if (e.keyCode === 13 && e.target.tagName != 'TEXTAREA') {
+                        console.log(e.target.tagName);
+                        if (e.keyCode === 13 && e.target.tagName != 'TEXTAREA' && !e.target.classList.contains('note-editable')) {
                             if (e.target.classList.contains('modal'))
                                 return;
                             e.target.blur();
@@ -556,8 +639,66 @@
     };
 
     ko.applyBindingsWithValidation = function (viewModel, rootNode, options) {
+        // TODO: Options error
         ko.validate.setValidationProperties(viewModel, options);
         ko.applyBindings(viewModel, rootNode);
     };
+
+    // Localization
+
+    var _locales = {};
+    var _currentLocale;
+
+    ko.validate.defineLocale = function(name, values) {
+
+        if (name && values) {
+            _locales[name.toLowerCase()] = values;
+            return values;
+        }
+        return null;
+    };
+
+    ko.validate.locale = function(name) {
+        if (name) {
+            name = name.toLowerCase();
+
+            if (_locales.hasOwnProperty(name)) {
+                ko.validate.localize(_locales[name]);
+                _currentLocale = name;
+            }
+            else {
+                throw new Error('Localization ' + name + ' has not been loaded.');
+            }
+        }
+        return _currentLocale;
+    };
+
+    //quick function to override rule messages
+    ko.validate.localize = function (msgTranslations) {
+        var rules = ko.validate.rules;
+        //loop the properties in the object and assign the msg to the rule
+        for (var ruleName in msgTranslations) {
+            if (rules.hasOwnProperty(ruleName)) {
+                rules[ruleName].message = msgTranslations[ruleName];
+            }
+        }
+    };
+
+    // Populate default locale (this will make en-US.js somewhat redundant)
+    (function() {
+
+        var localeData = {};
+        var rules = ko.validate.rules;
+
+        for (var ruleName in rules) {
+            if (rules.hasOwnProperty(ruleName)) {
+                localeData[ruleName] = rules[ruleName].message;
+            }
+        }
+        ko.validate.defineLocale('pt-br', localeData);
+    })();
+
+    // No need to invoke locale because the messages are already defined along with the rules for en-US
+    _currentLocale = 'pt-br';
 
 }));
