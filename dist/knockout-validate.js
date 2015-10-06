@@ -393,8 +393,10 @@
                         element.next().show();
 
                     if (index === 0) {
-                        if (element.is(':visible'))
+                        if (element.is(':visible')) {
+                            $(window).scrollTop(element.offset().top - 100);
                             element.focus();
+                        }
                         else
                             formGroup[0].scrollIntoView({ behavior: "smooth"});
                     }
@@ -611,7 +613,6 @@
                     };
                     $el.on('keydown', function (e) {
                         // blur elements to trigger viewmodel changes
-                        console.log(e.target.tagName);
                         if (e.keyCode === 13 && e.target.tagName != 'TEXTAREA' && !e.target.classList.contains('note-editable')) {
                             if (e.target.classList.contains('modal'))
                                 return;
