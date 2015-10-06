@@ -93,7 +93,8 @@
             classHasError: 'has-error',
             classGroupContainer: 'form-group',
             appendMessageToContainer: true,
-            appendErrorsToRoot: false
+            appendErrorsToRoot: false,
+            marginTopOnFocus: 100
         },
         kv = ko.validate;
 
@@ -394,7 +395,7 @@
 
                     if (index === 0) {
                         if (element.is(':visible')) {
-                            $(window).scrollTop(element.offset().top - 100);
+                            $(window).scrollTop(element.offset().top - o.marginTopOnFocus);
                             element.focus();
                         }
                         else
