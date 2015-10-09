@@ -1,10 +1,10 @@
 (function (factory) {
     if (typeof require === "function" && typeof exports === "object" && typeof module === "object") {
         // CommonJS or Node: hard-coded dependency on "knockout"
-        factory(require("jquery"), require("ko"), exports);
+        factory(require("jquery"), require("knockout"), exports);
     } else if (typeof define === "function" && define["amd"]) {
         // AMD anonymous module with hard-coded dependency on "knockout"
-        define(["jquery", "ko", "exports"], factory);
+        define(["jquery", "knockout", "exports"], factory);
     } else {
         // <script> tag: use the global `ko` object, attaching a `mapping` property
         factory(jQuery, ko, ko.validate = {});
@@ -93,8 +93,7 @@
             classHasError: 'has-error',
             classGroupContainer: 'form-group',
             appendMessageToContainer: true,
-            appendErrorsToRoot: false,
-            marginTopOnFocus: 100
+            appendErrorsToRoot: false
         },
         kv = ko.validate;
 
@@ -395,7 +394,7 @@
 
                     if (index === 0) {
                         if (element.is(':visible')) {
-                            $(window).scrollTop(element.offset().top - o.marginTopOnFocus);
+                            $(window).scrollTop(element.offset().top - 100);
                             element.focus();
                         }
                         else
