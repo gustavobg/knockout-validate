@@ -94,7 +94,8 @@
             classGroupContainer: 'form-group',
             appendMessageToContainer: true,
             appendErrorsToRoot: false,
-            appendErrorsToContext: false
+            appendErrorsToContext: false,
+            appendErrorsToParentComponentContext: false
         },
         kv = ko.validate;
 
@@ -545,6 +546,8 @@
                 viewModel = bindingContext.$root;
             } else if (options.hasOwnProperty('appendErrorsToContext') && options.appendErrorsToContext) {
                 viewModel = bindingContext[options.appendErrorsToContext];
+            } else if (options.hasOwnProperty('appendErrorsToParentComponentContext') && options.appendErrorsToParentComponentContext) {
+                viewModel = bindingContext['$parentContext']['$component'];
             }
 
             // check if viewmodel context has validation properties
