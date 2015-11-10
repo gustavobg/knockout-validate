@@ -93,7 +93,8 @@
             classHasError: 'has-error',
             classGroupContainer: 'form-group',
             appendMessageToContainer: true,
-            appendErrorsToRoot: false
+            appendErrorsToRoot: false,
+            appendErrorsToContext: false
         },
         kv = ko.validate;
 
@@ -540,10 +541,9 @@
             element.data('options', options);
 
             // append error list to root viewmodel
-            if (options.hasOwnProperty('appendErrorsToRoot')) {
-                if (options.appendErrorsToRoot)
-                    viewModel = bindingContext.$root;
-            } else if (options.hasOwnProperty('appendErrorsToContext')) {
+            if (options.hasOwnProperty('appendErrorsToRoot') && options.appendErrorsToRoot) {
+                viewModel = bindingContext.$root;
+            } else if (options.hasOwnProperty('appendErrorsToContext') && options.appendErrorsToContext) {
                 viewModel = bindingContext[options.appendErrorsToContext];
             }
 
