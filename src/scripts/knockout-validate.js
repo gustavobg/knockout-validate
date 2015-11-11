@@ -399,8 +399,10 @@
                             $(window).scrollTop(element.offset().top - 100);
                             element.focus();
                         }
-                        else
+                        else if (formGroup[0])
                             formGroup[0].scrollIntoView({ behavior: "smooth"});
+                        else
+                            element[0].scrollIntoView({ behavior: "smooth"});
                     }
                 });
             };
