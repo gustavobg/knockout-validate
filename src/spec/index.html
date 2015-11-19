@@ -11,7 +11,7 @@
 <div id="qunit"></div>
 <div id="qunit-fixture">
 
-    <form id="examples" data-bind="validateForm: { submitHandler: Save }">
+    <form id="examples" data-bind="submit: Save">
         <div class="form-group">
             <label for="name">Name</label>
             <input id="name" type="text" data-bind="value: name, validate: { required: true, minLength: 3, maxLength: 15 }" />
@@ -36,6 +36,7 @@
         </div>
 
         <input type="submit" class="btn btn-success" value="Submit">
+
     </form>
 
     <form id="custom-binding">

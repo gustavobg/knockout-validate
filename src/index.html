@@ -11,7 +11,7 @@
     <div class="container">
         <h1>Validate Examples!</h1>
 
-        <form id="examples" data-bind="validateForm: { submitHandler: Save }">
+        <form id="examples" data-bind="submit: Save">
             <div class="form-group">
                 <label for="name">Name</label>
                 <input id="name" class="form-control" type="text" data-bind="value: name, validate: { required: true, minLength: 2, maxLength: 15 }" />
@@ -46,6 +46,7 @@
                     </div>
                 </div>
             </div>
+
             <input type="submit" class="btn btn-success" value="Submit">
 
         </form>
@@ -74,7 +75,7 @@
             this.confirm_password = ko.observable();
 
             this.Save = function () {
-                if (self.isValid) {
+                if (self.isValid()) {
                     alert('Valid form! submitting!')
                 } else {
                     alert('Hmm. Check this errors!');
@@ -83,6 +84,7 @@
             };
         };
         vm = new vm();
+        window.vm = vm;
         ko.applyBindings(vm, document.getElementById('examples'));
     });
 

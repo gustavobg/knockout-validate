@@ -593,57 +593,6 @@
         update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {}
     };
 
-
-    ko.bindingHandlers.validateForm = {
-        // Set submit action and binds the ENTER key
-
-        init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
-            // validate form adapter
-            if (element.nodeName === 'FORM') {
-                // find validate elements
-                var options = valueAccessor();
-
-                element.setAttribute('novalidate', 'novalidate');
-
-                $el = $(element);
-
-
-                if (options.hasOwnProperty('submitHandler')) {
-                    var submitHandler = function () {
-                        if (viewModel.isValid()) {
-                            options.submitHandler();
-                        }
-                        else
-                            viewModel.showErrors();
-                    };
-                    $el.on('keydown', function (e) {
-                        // blur elements to trigger viewmodel changes
-                        if (e.keyCode === 13 && e.target.tagName != 'TEXTAREA' && !e.target.classList.contains('note-editable')) {
-                            if (e.target.classList.contains('modal'))
-                                return;
-                            e.target.blur();
-                            submitHandler();
-
-                            // prevent top handlers from submitting
-                            e.stopPropagation(); // prevent submit
-                            e.preventDefault();
-                        }
-                    });
-                    $el.on('submit', function (e) {
-                        document.activeElement.blur();
-                        e.stopPropagation(); // prevent submit
-                        e.preventDefault();
-                        submitHandler();
-                    });
-                }
-
-            } else {
-                throw ('ValidateError: This validateForm handler should be used on a form element');
-            }
-
-        }
-    };
-
     ko.applyBindingsWithValidation = function (viewModel, rootNode, options) {
         // TODO: Options error
         ko.validate.setValidationProperties(viewModel, options);
