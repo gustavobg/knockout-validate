@@ -396,13 +396,13 @@
 
                     if (index === 0) {
                         if (element.is(':visible')) {
-                            $(window).scrollTop(element.offset().top - 100);
+                            $(window).scrollTop(element.offset().top - 120);
                             element.focus();
                         }
-                        else if (formGroup[0])
-                            formGroup[0].scrollIntoView({ behavior: "smooth"});
+                        else if (formGroup.length > 0)
+                            $(window).scrollTop(formGroup.offset().top - 120);
                         else
-                            element[0].scrollIntoView({ behavior: "smooth"});
+                            $(window).scrollTop(element.offset().top - 120);
                     }
                 });
             };
