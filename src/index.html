@@ -47,6 +47,10 @@
                 </div>
             </div>
 
+            <div data-bind="validateOptions: { appendErrorsToContext: '$parent' }">
+                <human-verification params="id: 'humanCheck'"></human-verification>
+            </div>
+
             <input type="submit" class="btn btn-success" value="Submit">
 
         </form>
@@ -60,7 +64,7 @@
     <!--<script src="scripts/knockout-validate.js"></script>-->
 
 <script type="text/javascript">
-    requirejs(['knockout', 'knockout-validate', 'knockout-validate-localization'], function(ko) {
+    requirejs(['knockout', 'knockout-validate', 'knockout-validate-localization', 'knockout-example-component'], function(ko) {
 
         ko.validate.locale('pt-BR');
 

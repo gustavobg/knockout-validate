@@ -49,14 +49,10 @@
                 return !isNaN(o);
             },
             isEmptyVal: function (val) {
-                if (val === undefined) {
+                if (val == undefined || val == null || val == "") {
                     return true;
-                }
-                if (val === null) {
-                    return true;
-                }
-                if (val === "") {
-                    return true;
+                } else {
+                    return false;
                 }
             },
             formatMessage: function (message, params, observable) {
@@ -342,6 +338,14 @@
         },
         message: 'Telefone inválido'
     };
+    ko.validate.rules['equalValue'] = {
+        validator: function (val, params) {
+            if (!params) { return true; }
+            if (ko.validate.utils.isEmptyVal(val)) { return true; } // makes it optional, use 'required' rule if it should be required
+            return val == ko.validate.utils.getValue(params);
+        },
+        message: 'Valores devem ser iguais'
+    };
     ko.validate.rules['equal'] = {
         validator: function (val, params) {
             var otherValue = params;
@@ -470,7 +474,9 @@
                         element.next().text(message);
                 },
                 setInvalid = function (elementId) {
-                    viewModel.invalidFields.push(elementId);
+                    if (viewModel.invalidFields.indexOf(elementId) == -1) {
+                        viewModel.invalidFields.push(elementId);
+                    }
                 },
                 hideError = function (element) {
                     var formGroup = element.closest('.' + options.classGroupContainer);
@@ -549,7 +555,7 @@
             } else if (options.hasOwnProperty('appendErrorsToContext') && options.appendErrorsToContext) {
                 viewModel = bindingContext[options.appendErrorsToContext];
             } else if (options.hasOwnProperty('appendErrorsToParentComponentContext') && options.appendErrorsToParentComponentContext) {
-                viewModel = bindingContext['$parentContext']['$component'];
+                viewModel = bindingContext['$parentContext'].hasOwnProperty('$component') ? bindingContext['$parentContext']['$component'] : bindingContext['$parentContext']['$parent'];
             }
 
             // check if viewmodel context has validation properties
