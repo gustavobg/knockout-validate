@@ -555,7 +555,7 @@
             } else if (options.hasOwnProperty('appendErrorsToContext') && options.appendErrorsToContext) {
                 viewModel = bindingContext[options.appendErrorsToContext];
             } else if (options.hasOwnProperty('appendErrorsToParentComponentContext') && options.appendErrorsToParentComponentContext) {
-                viewModel = bindingContext['$parentContext'].hasOwnProperty('$component') ? bindingContext['$parentContext']['$component'] : bindingContext['$parentContext']['$parent'];
+                viewModel = bindingContext['$parentContext'].hasOwnProperty('$component') ? bindingContext['$parentContext']['$component'] : bindingContext['$parent'];
             }
 
             // check if viewmodel context has validation properties
