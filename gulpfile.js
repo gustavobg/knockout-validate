@@ -13,7 +13,7 @@ var  gulp = require('gulp'),
      gulpsync = require('gulp-sync')(gulp);
 
 // pass along gulp reference to have tasks imported
-//require('gulp-release-tasks')(gulp);
+require('gulp-release-tasks')(gulp);
 
 //    https://www.npmjs.com/package/gulp-release-tasks
 //    gulp tag	v0.0.1 -> v0.0.2 + commit + tag + push
@@ -57,25 +57,25 @@ gulp.task('build:css', function() {
 
 gulp.task('build', ['build:css', 'build:js']);
 
-gulp.task('bump', ['build'], function () {
-    return gulp.src(['./package.json', './bower.json'])
-        .pipe(bump())
-        .pipe(gulp.dest('./'));
-});
+//gulp.task('bump', ['build'], function () {
+//    return gulp.src(['./package.json', './bower.json'])
+//        .pipe(bump())
+//        .pipe(gulp.dest('./'));
+//});
 
-gulp.task('tag', ['bump'], function () {
-    var pkg = require('./package.json');
-    var v = 'v' + pkg.version;
-    var message = 'Release ' + v;
-
-    return gulp.src('./')
-        .pipe(git.add({args: '--all'}))
-        .pipe(git.commit(message))
-        .pipe(git.tag(v, message))
-        .pipe(git.push('origin', 'master', {args: " --follow-tags"}))
-        .pipe(gulp.dest('./'));
-});
-gulp.task('release', ['tag']);
+//gulp.task('tag', ['bump'], function () {
+//    var pkg = require('./package.json');
+//    var v = 'v' + pkg.version;
+//    var message = 'Release ' + v;
+//
+//    return gulp.src('./')
+//        .pipe(git.add({args: '--all'}))
+//        .pipe(git.commit(message))
+//        .pipe(git.tag(v, message))
+//        .pipe(git.push('origin', 'master', {args: " --follow-tags"}))
+//        .pipe(gulp.dest('./'));
+//});
+//gulp.task('release', ['tag']);
 
 // test
 gulp.task('test', function() {
@@ -91,5 +91,5 @@ gulp.task('sass', function() {
         .pipe(browserSync.stream());
 });
 
-gulp.task('default', gulpsync.sync(['clean', 'test', ['build']]));
+gulp.task('default', gulpsync.sync(['clean', 'test', ['build', 'tag']]));
 gulp.task('ci', ['test', 'build']);
