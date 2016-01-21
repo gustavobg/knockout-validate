@@ -49,10 +49,19 @@
                 return !isNaN(o);
             },
             isEmptyVal: function (val) {
-                if (val == undefined || val == null || val == "") {
+                //if (val == undefined || val == null || val == "") {
+                //    return true;
+                //} else {
+                //    return false;
+                //}
+                if (val === undefined) {
                     return true;
-                } else {
-                    return false;
+                }
+                if (val === null) {
+                    return true;
+                }
+                if (val === "") {
+                    return true;
                 }
             },
             formatMessage: function (message, params, observable) {
