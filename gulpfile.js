@@ -57,6 +57,8 @@ gulp.task('build:css', function() {
 
 gulp.task('build', ['build:css', 'build:js']);
 
+// ATENÇÃO: para publicar use somente "gulp"
+
 //gulp.task('bump', ['build'], function () {
 //    return gulp.src(['./package.json', './bower.json'])
 //        .pipe(bump())
