@@ -374,6 +374,15 @@
         message: 'Valores não podem ser iguais'
     };
 
+    ko.validate.rules['customError'] = {
+        validator: function (obs) {
+            var val = ko.utils.unwrapObservable(obs);
+            if (ko.validate.utils.isEmptyVal(val)) { return true; }
+            return val;
+        },
+        message: 'Custom error'
+    };
+
     ko.validate['setValidationProperties'] = function (vm) {
         var validateModel = function () {
             var self = this;
