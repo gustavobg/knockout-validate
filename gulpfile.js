@@ -93,5 +93,5 @@ gulp.task('sass', function() {
         .pipe(browserSync.stream());
 });
 
-gulp.task('default', gulpsync.sync(['clean', 'test', ['build', 'tag']]));
+gulp.task('default', gulpsync.sync(['clean', 'test', 'build', 'tag']));
 gulp.task('ci', ['test', 'build']);
