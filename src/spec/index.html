@@ -17,6 +17,10 @@
             <input id="name" type="text" data-bind="value: name, validate: { required: true, minLength: 3, maxLength: 15 }" />
         </div>
         <div class="form-group">
+            <label for="obsValidator">Name</label>
+            <input id="obsValidator" type="text" data-bind="value: obsValidator, validate: { required: requiredObs }" />
+        </div>
+        <div class="form-group">
             <label for="email">E-mail</label>
             <input id="email" type="text" data-bind="value: email, validate: { email: true }" />
         </div>
@@ -48,7 +52,6 @@
 <script src="../components/jquery/dist/jquery.min.js"></script>
 <script src="../components/knockout/dist/knockout.debug.js"></script>
 <script src="../scripts/knockout-validate.js"></script>
-<script src="../scripts/knockout-validate-rules.js"></script>
 <script>
     module("knockout-validate");
     /*
@@ -77,12 +80,16 @@
                 this.password = ko.observable(123);
                 this.confirm_password = ko.observable(123);
                 this.email = ko.observable('john@snow.com');
+                this.obsValidator = ko.observable('');
+                this.requiredObs = ko.observable(false);
             } else {
                 this.name = ko.observable();
                 this.age = ko.observable();
                 this.password = ko.observable();
                 this.confirm_password = ko.observable();
                 this.email = ko.observable();
+                this.obsValidator = ko.observable('');
+                this.requiredObs = ko.observable(true);
             }
             this.Save = function () {
                 if (self.isValid) {
@@ -133,6 +140,19 @@
         vm.confirm_password('123');
         ok(!vm.isValid(), 'isValid should be false');
     });
+    test('required observable and setting required markers', function () {
+        var vm = setupViewModel(true),
+            requiredMarker = document.getElementById('obsValidator').parentNode;
+
+        ok(vm.isValid(), 'isValid should be true');
+        console.log(requiredMarker);
+        vm.requiredObs(true);
+        ok(!vm.isValid(), 'isValid should be false');
+        console.log(requiredMarker);
+        vm.requiredObs(false);
+        ok(vm.isValid(), 'isValid should be true');
+        console.log(requiredMarker);
+    });
     test('invalidFields observable', function () {
         var vm = setupViewModel(true);
         // should not be valid, because some fields are required
@@ -142,7 +162,7 @@
     });
     test('parameter set', function () {
         var vm = setupViewModel(),
-                nameElement = document.getElementById('name');
+            nameElement = document.getElementById('name');
         ko.cleanNode(nameElement);
         ko.applyBindingsToNode(nameElement, { value: name, validate: { required: { param: false, message: '123' } } }, vm);
         ok($(nameElement).next().text() === '123', 'message appended correctly');

@@ -523,7 +523,7 @@
                                 isValidRule = validate.validator(value, ko.utils.unwrapObservable(param));
 
                             if (prop === 'required')
-                                hasRequiredRule = param;
+                                hasRequiredRule = ko.utils.unwrapObservable(param);
                             if (validate.hasOwnProperty('valid'))
                                 isValidRule = validate.valid;
                             if (!isValidRule) {
