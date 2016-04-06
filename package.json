@@ -1,6 +1,6 @@
 {
   "name": "knockout-validate",
-  "version": "0.0.72",
+  "version": "0.0.73",
   "private": true,
   "devDependencies": {
     "bower": "*",
