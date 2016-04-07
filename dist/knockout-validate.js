@@ -570,6 +570,18 @@
             // set element options parameters
             element.data('options', options);
 
+        },
+        update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
+
+            var value = ko.unwrap(ko.validate.utils.getBindingHandlerValue(valueAccessor, allBindings)), // trigger
+            // check if validation is in a component context
+                viewModel = bindingContext.$component ? bindingContext.$component : viewModel,
+                options = ko.validate.utils.getOptions(bindingContext, valueAccessor),
+                element = $(element),
+                isFirstEvaluation = ko.computedContext.isInitial(),
+                validateResult = {},
+                elementId = element.attr('id');
+
             // append error list to root viewmodel
             if (options.hasOwnProperty('appendErrorsToRoot') && options.appendErrorsToRoot) {
                 viewModel = bindingContext.$root;
@@ -583,21 +595,6 @@
             if (!viewModel.hasOwnProperty('isValid')) {
                 ko.validate.setValidationProperties(viewModel, options);
             }
-
-            ko.computed(function () {
-            });
-
-        },
-        update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
-
-            var value = ko.unwrap(ko.validate.utils.getBindingHandlerValue(valueAccessor, allBindings)), // trigger
-            // check if validation is in a component context
-                viewModel = bindingContext.$component ? bindingContext.$component : viewModel,
-                options = ko.validate.utils.getOptions(bindingContext, valueAccessor),
-                element = $(element),
-                isFirstEvaluation = ko.computedContext.isInitial(),
-                validateResult = {},
-                elementId = element.attr('id');
 
             //{ required: true, email: vm.email, equals: { param: vm.property, message: "Values must be equal!" } }
             // rule can be an observable
@@ -614,7 +611,7 @@
             } else {
                 ko.validate.utils.removeRequiredMarker(element, options);
             }
-            console.log('validate: ' + (validateResult.valid ? 'true' : 'false') + ' (' + elementId + ')', viewModel);
+            //console.log('validate: ' + (validateResult.valid ? 'true' : 'false') + ' (' + elementId + ')', viewModel);
             if (validateResult.valid) {
                 ko.validate.utils.setValid(elementId, viewModel);
                 ko.validate.utils.hideError(element, options);
