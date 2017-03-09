@@ -11,7 +11,7 @@
     <div class="container">
         <h1>Validate Examples!</h1>
 
-        <form id="examples" data-bind="validateForm: { submitHandler: Save }">
+        <form id="examples" data-bind="submit: Save">
             <div class="form-group">
                 <label for="name">Name</label>
                 <input id="name" class="form-control" type="text" data-bind="value: name, validate: { required: true, minLength: 2, maxLength: 15 }" />
@@ -27,6 +27,14 @@
             <div class="form-group">
                 <label for="age">Your age</label>
                 <input id="age" class="form-control" type="text" data-bind="value: age, validate: { digit: true }" />
+            </div>
+            <div class="form-group">
+                <label for="minValue">Min value (Should be at least 2)</label>
+                <input id="minValue" class="form-control" type="text" data-bind="value: minValue, validate: { digit: true, min: 2 }" />
+            </div>
+            <div class="form-group">
+                <label for="maxValue">Max value (Should be at least the "Min value" observable value)</label>
+                <input id="maxValue" class="form-control" type="text" data-bind="value: maxValue, validate: { digit: true, min: minValue }" />
             </div>
             <div data-bind="validateOptions: { appendMessageToContainer: true }">
                 <div class="form-group">
@@ -46,6 +54,11 @@
                     </div>
                 </div>
             </div>
+
+            <div data-bind="validateOptions: { appendErrorsToContext: '$parent' }">
+                <human-verification params="id: 'humanCheck'"></human-verification>
+            </div>
+
             <input type="submit" class="btn btn-success" value="Submit">
 
         </form>
@@ -59,7 +72,7 @@
     <!--<script src="scripts/knockout-validate.js"></script>-->
 
 <script type="text/javascript">
-    requirejs(['ko', 'knockout-validate', 'knockout-validate-localization'], function(ko) {
+    requirejs(['knockout', 'knockout-validate', 'knockout-validate-localization', 'knockout-example-component'], function(ko) {
 
         ko.validate.locale('pt-BR');
 
@@ -71,10 +84,12 @@
             this.password = ko.observable();
             this.email = ko.observable();
             this.valueMinMax = ko.observable();
+            this.minValue = ko.observable();
+            this.maxValue = ko.observable();
             this.confirm_password = ko.observable();
 
             this.Save = function () {
-                if (self.isValid) {
+                if (self.isValid()) {
                     alert('Valid form! submitting!')
                 } else {
                     alert('Hmm. Check this errors!');
@@ -83,6 +98,7 @@
             };
         };
         vm = new vm();
+        window.vm = vm;
         ko.applyBindings(vm, document.getElementById('examples'));
     });
 

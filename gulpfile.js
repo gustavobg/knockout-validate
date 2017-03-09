@@ -57,6 +57,8 @@ gulp.task('build:css', function() {
 
 gulp.task('build', ['build:css', 'build:js']);
 
+// ATENÇÃO: para publicar use somente "gulp"
+
 //gulp.task('bump', ['build'], function () {
 //    return gulp.src(['./package.json', './bower.json'])
 //        .pipe(bump())
@@ -72,7 +74,7 @@ gulp.task('build', ['build:css', 'build:js']);
 //        .pipe(git.add({args: '--all'}))
 //        .pipe(git.commit(message))
 //        .pipe(git.tag(v, message))
-//        .pipe(git.push('origin', 'master', ''))
+//        .pipe(git.push('origin', 'master', {args: " --follow-tags"}))
 //        .pipe(gulp.dest('./'));
 //});
 //gulp.task('release', ['tag']);
@@ -91,5 +93,5 @@ gulp.task('sass', function() {
         .pipe(browserSync.stream());
 });
 
-gulp.task('default', gulpsync.sync(['clean', 'test', ['build']]));
+gulp.task('default', gulpsync.sync(['clean', 'test', 'build', 'tag']));
 gulp.task('ci', ['test', 'build']);

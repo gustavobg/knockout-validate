@@ -1,10 +1,10 @@
 (function (factory) {
     if (typeof require === "function" && typeof exports === "object" && typeof module === "object") {
         // CommonJS or Node: hard-coded dependency on "knockout"
-        factory(require("jquery"), require("ko"), exports);
+        factory(require("jquery"), require("knockout"), exports);
     } else if (typeof define === "function" && define["amd"]) {
         // AMD anonymous module with hard-coded dependency on "knockout"
-        define(["jquery", "ko", "exports"], factory);
+        define(["jquery", "knockout", "exports"], factory);
     } else {
         // <script> tag: use the global `ko` object, attaching a `mapping` property
         factory(jQuery, ko, ko.validate = {});
@@ -49,6 +49,11 @@
                 return !isNaN(o);
             },
             isEmptyVal: function (val) {
+                //if (val == undefined || val == null || val == "") {
+                //    return true;
+                //} else {
+                //    return false;
+                //}
                 if (val === undefined) {
                     return true;
                 }
@@ -93,7 +98,9 @@
             classHasError: 'has-error',
             classGroupContainer: 'form-group',
             appendMessageToContainer: true,
-            appendErrorsToRoot: false
+            appendErrorsToRoot: false,
+            appendErrorsToContext: false,
+            appendErrorsToParentComponentContext: false
         },
         kv = ko.validate;
 
@@ -340,6 +347,14 @@
         },
         message: 'Telefone inválido'
     };
+    ko.validate.rules['equalValue'] = {
+        validator: function (val, params) {
+            if (!params) { return true; }
+            if (ko.validate.utils.isEmptyVal(val)) { return true; } // makes it optional, use 'required' rule if it should be required
+            return val == ko.validate.utils.getValue(params);
+        },
+        message: 'Valores devem ser iguais'
+    };
     ko.validate.rules['equal'] = {
         validator: function (val, params) {
             var otherValue = params;
@@ -357,6 +372,15 @@
             return val !== ko.validate.utils.getValue(otherValue);
         },
         message: 'Valores não podem ser iguais'
+    };
+
+    ko.validate.rules['customError'] = {
+        validator: function (obs) {
+            var val = ko.utils.unwrapObservable(obs);
+            if (ko.validate.utils.isEmptyVal(val)) { return true; }
+            return val;
+        },
+        message: 'Custom error'
     };
 
     ko.validate['setValidationProperties'] = function (vm) {
@@ -393,10 +417,14 @@
                         element.next().show();
 
                     if (index === 0) {
-                        if (element.is(':visible'))
+                        if (element.is(':visible')) {
+                            $(window).scrollTop(element.offset().top - 120);
                             element.focus();
+                        }
+                        else if (formGroup.length > 0)
+                            $(window).scrollTop(formGroup.offset().top - 120);
                         else
-                            formGroup[0].scrollIntoView({ behavior: "smooth"});
+                            $(window).scrollTop(element.offset().top - 120);
                     }
                 });
             };
@@ -427,6 +455,91 @@
         };
     }());
 
+    ko.validate.utils.setValid = function (elementId, viewModel) {
+        viewModel.invalidFields.remove(elementId);
+    };
+    ko.validate.utils.setRequiredMarker = function (element, options) {
+        element.closest('.' + options.classGroupContainer).addClass(options.classHasRequired);
+    };
+    ko.validate.utils.removeRequiredMarker = function (element, options) {
+        element.closest('.' + options.classGroupContainer).removeClass(options.classHasRequired);
+    };
+    ko.validate.utils.setMessage = function (element, options, message) {
+        if (options.appendMessageToContainer)
+            element.closest('.' + options.classGroupContainer).find('.' + options.classMessageError).text(message);
+        else
+            element.next().text(message);
+    };
+    ko.validate.utils.setInvalid = function (elementId, viewModel) {
+        if (viewModel.invalidFields.indexOf(elementId) == -1) {
+            viewModel.invalidFields.push(elementId);
+        }
+    };
+    ko.validate.utils.hideError = function (element, options) {
+        var formGroup = element.closest('.' + options.classGroupContainer);
+        formGroup.removeClass(options.classHasError);
+        element.removeClass(options.classElementError);
+        if (options.appendMessageToContainer)
+            formGroup.find('.' + options.classMessageError).hide();
+        else
+            element.next().hide();
+    };
+    ko.validate.utils.showError = function (element, options, message) {
+        var formGroup = element.closest('.' + options.classGroupContainer);
+        formGroup.addClass(options.classHasError);
+        element.addClass(options.classElementError);
+        if (options.appendMessageToContainer)
+            formGroup.find('.' + options.classMessageError).show();
+        else
+            element.next().show();
+    };
+    ko.validate.utils.validateRules = function (valueAccessor, value) {
+        // valid params format are: validate: { value: property1, required: true, notEquals: property2 }
+        // or: validate: { value: property1: rules: { required: true, notEquals: property2 } }
+        var isValid = true, messages = [], param = '', hasRequiredRule = false, message = null;
+
+        if (valueAccessor.hasOwnProperty('rules')) {
+            valueAccessor = valueAccessor.rules;
+        }
+        for (var prop in valueAccessor) {
+            if (prop === 'value' || prop === 'options')
+                continue;
+            if (ko.validate.rules[prop]) {
+                // rule exists
+                var validate = ko.validate.rules[prop],
+                    param = valueAccessor[prop],
+                    isValidRule = validate.validator(value, ko.utils.unwrapObservable(param));
+
+                if (prop === 'required')
+                    hasRequiredRule = ko.utils.unwrapObservable(param);
+                if (validate.hasOwnProperty('valid'))
+                    isValidRule = validate.valid;
+                if (!isValidRule) {
+                    message = valueAccessor[prop] !== null && valueAccessor[prop].hasOwnProperty('message') ? valueAccessor[prop].message : validate.message;
+                    messages.push(ko.validate.utils.formatMessage(message, param));
+                    isValid = false;
+                }
+            } else {
+                if (console)
+                    console.error('ValidateWarning: The rule "' + prop + '" is not defined, check the rules defined ->', ko.validate.rules);
+            }
+        }
+        return { messages: messages, valid: isValid, hasRequiredRule: hasRequiredRule };
+    };
+    ko.validate.utils.getOptions = function (bindingContext, valueAccessor) {
+        var options = {};
+        if (bindingContext.hasOwnProperty('validateOptions')) {
+            options =  $.extend(true, {}, ko.validate.configuration, bindingContext.validateOptions);
+        } else {
+            options = ko.validate['configuration'];
+        }
+        // extend options from valueAccessor()
+        if (valueAccessor().hasOwnProperty('options')) {
+            options = $.extend(true, {}, options, valueAccessor().options);
+        }
+        return options;
+    };
+
     ko.bindingHandlers.validate = {
         //preprocess: function (value, name, addBindingCallback) {
         //    console.log(value, name, addBindingCallback);
@@ -440,93 +553,13 @@
             var value = ko.validate.utils.getBindingHandlerValue(valueAccessor, allBindings),
             // check if validation is in a component context
                 viewModel = bindingContext.$component ? bindingContext.$component : viewModel,
-                options = function () {
-                    if (bindingContext.hasOwnProperty('validateOptions')) {
-                        return $.extend(true, {}, ko.validate.configuration, bindingContext.validateOptions);
-                    } else {
-                        return ko.validate['configuration'];
-                    }
-                }(),
-                element = $(element),
-                setValid = function (elementId) {
-                    viewModel.invalidFields.remove(elementId);
-                },
-                setRequiredMarker = function (element) {
-                    element.closest('.' + options.classGroupContainer).addClass(options.classHasRequired);
-                },
-                removeRequiredMarker = function (element) {
-                    element.closest('.' + options.classGroupContainer).removeClass(options.classHasRequired);
-                },
-                setMessage = function (element, message) {
-                    if (options.appendMessageToContainer)
-                        element.closest('.' + options.classGroupContainer).find('.' + options.classMessageError).text(message);
-                    else
-                        element.next().text(message);
-                },
-                setInvalid = function (elementId) {
-                    viewModel.invalidFields.push(elementId);
-                },
-                hideError = function (element) {
-                    var formGroup = element.closest('.' + options.classGroupContainer);
-                    formGroup.removeClass(options.classHasError);
-                    element.removeClass(options.classElementError);
-                    if (options.appendMessageToContainer)
-                        formGroup.find('.' + options.classMessageError).hide();
-                    else
-                        element.next().hide();
-                },
-                showError = function (element, message) {
-                    var formGroup = element.closest('.' + options.classGroupContainer);
-                    formGroup.addClass(options.classHasError);
-                    element.addClass(options.classElementError);
-                    if (options.appendMessageToContainer)
-                        formGroup.find('.' + options.classMessageError).show();
-                    else
-                        element.next().show();
-                },
-                validateRules = function (valueAccessor, value) {
-                    // valid params format are: validate: { value: property1, required: true, notEquals: property2 }
-                    // or: validate: { value: property1: rules: { required: true, notEquals: property2 } }
-                    var isValid = true, messages = [], param = '', hasRequiredRule = false, message = null;
-
-                    if (valueAccessor.hasOwnProperty('rules')) {
-                        valueAccessor = valueAccessor.rules;
-                    }
-                    for (var prop in valueAccessor) {
-                        if (prop === 'value' || prop === 'options')
-                            continue;
-                        if (ko.validate.rules[prop]) {
-                            // rule exists
-                            var validate = ko.validate.rules[prop],
-                                param = valueAccessor[prop],
-                                isValidRule = validate.validator(value, ko.utils.unwrapObservable(param));
-
-                            if (prop === 'required')
-                                hasRequiredRule = param;
-                            if (validate.hasOwnProperty('valid'))
-                                isValidRule = validate.valid;
-                            if (!isValidRule) {
-                                message = valueAccessor[prop] !== null && valueAccessor[prop].hasOwnProperty('message') ? valueAccessor[prop].message : validate.message;
-                                messages.push(ko.validate.utils.formatMessage(message, param));
-                                isValid = false;
-                            }
-                        } else {
-                            if (console)
-                                console.error('ValidateWarning: The rule "' + prop + '" is not defined, check the rules defined ->', ko.validate.rules);
-                        }
-                    }
-                    return { messages: messages, valid: isValid, hasRequiredRule: hasRequiredRule };
-                };
+                options = ko.validate.utils.getOptions(bindingContext, valueAccessor),
+                element = $(element);
 
             if (value === undefined) {
                 if (console)
                     console.error('ValidateError: Missing "value" bind parameter. Should be a "value", "textInput", "checked" or a "value" parameter inside the validate handler (validate: { value: observable, required: true })', element);
                 return;
-            }
-
-            // extend options from valueAccessor()
-            if (valueAccessor().hasOwnProperty('options')) {
-                options = $.extend(true, {}, options, valueAccessor().options);
             }
 
             if (options.appendMessageToContainer)
@@ -537,12 +570,25 @@
             // set element options parameters
             element.data('options', options);
 
+        },
+        update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
+
+            var value = ko.unwrap(ko.validate.utils.getBindingHandlerValue(valueAccessor, allBindings)), // trigger
+            // check if validation is in a component context
+                viewModel = bindingContext.$component ? bindingContext.$component : viewModel,
+                options = ko.validate.utils.getOptions(bindingContext, valueAccessor),
+                element = $(element),
+                isFirstEvaluation = ko.computedContext.isInitial(),
+                validateResult = {},
+                elementId = element.attr('id');
+
             // append error list to root viewmodel
-            if (options.hasOwnProperty('appendErrorsToRoot')) {
-                if (options.appendErrorsToRoot)
-                    viewModel = bindingContext.$root;
-            } else if (options.hasOwnProperty('appendErrorsToContext')) {
+            if (options.hasOwnProperty('appendErrorsToRoot') && options.appendErrorsToRoot) {
+                viewModel = bindingContext.$root;
+            } else if (options.hasOwnProperty('appendErrorsToContext') && options.appendErrorsToContext) {
                 viewModel = bindingContext[options.appendErrorsToContext];
+            } else if (options.hasOwnProperty('appendErrorsToParentComponentContext') && options.appendErrorsToParentComponentContext) {
+                viewModel = bindingContext['$parentContext'].hasOwnProperty('$component') ? bindingContext['$parentContext']['$component'] : bindingContext['$parent'];
             }
 
             // check if viewmodel context has validation properties
@@ -550,91 +596,31 @@
                 ko.validate.setValidationProperties(viewModel, options);
             }
 
-            ko.computed(function () {
-                var v = ko.utils.unwrapObservable(value), // trigger
-                    isFirstEvaluation = ko.computedContext.isInitial(),
-                    validateResult = {},
-                    elementId = element.attr('id');
-
-                //{ required: true, email: vm.email, equals: { param: vm.property, message: "Values must be equal!" } }
-                // rule can be an observable
-                if (elementId.length === 0) {
-                    if (console)
-                        console.error(element);
-                    throw ('ValidateError: Element to validate must have an ID');
-                }
-                validateResult = validateRules(valueAccessor(), v); // trigger
-                setMessage(element, validateResult.messages.join('. '));
-
-                if (validateResult.hasRequiredRule) {
-                    setRequiredMarker(element);
-                } else {
-                    removeRequiredMarker(element);
-                }
-                if (validateResult.valid) {
-                    setValid(elementId);
-                    hideError(element);
-                } else {
-                    setInvalid(elementId);
-                    // show error only if observable is modified and is not first computed evaluation
-                    if (!isFirstEvaluation && !validateResult.hasRequiredRule)
-                        showError(element);
-                }
-            });
-
-        },
-        update: function (element, valueAccessor, allBindings, viewModel, bindingContext) {}
-    };
-
-
-    ko.bindingHandlers.validateForm = {
-        // Set submit action and binds the ENTER key
-
-        init: function (element, valueAccessor, allBindings, viewModel, bindingContext) {
-            // validate form adapter
-            if (element.nodeName === 'FORM') {
-                // find validate elements
-                var options = valueAccessor();
-
-                element.setAttribute('novalidate', 'novalidate');
-
-                $el = $(element);
-
-
-                if (options.hasOwnProperty('submitHandler')) {
-                    var submitHandler = function () {
-                        if (viewModel.isValid()) {
-                            options.submitHandler();
-                        }
-                        else
-                            viewModel.showErrors();
-                    };
-                    $el.on('keydown', function (e) {
-                        // blur elements to trigger viewmodel changes
-                        console.log(e.target.tagName);
-                        if (e.keyCode === 13 && e.target.tagName != 'TEXTAREA' && !e.target.classList.contains('note-editable')) {
-                            if (e.target.classList.contains('modal'))
-                                return;
-                            e.target.blur();
-                            submitHandler();
-
-                            // prevent top handlers from submitting
-                            e.stopPropagation(); // prevent submit
-                            e.preventDefault();
-                        }
-                    });
-                    $el.on('submit', function (e) {
-                        document.activeElement.blur();
-                        e.stopPropagation(); // prevent submit
-                        e.preventDefault();
-                        submitHandler();
-                    });
-                }
-
-            } else {
-                throw ('ValidateError: This validateForm handler should be used on a form element');
+            //{ required: true, email: vm.email, equals: { param: vm.property, message: "Values must be equal!" } }
+            // rule can be an observable
+            if (elementId.length === 0) {
+                if (console)
+                    console.error(element);
+                throw ('ValidateError: Element to validate must have an ID');
             }
+            validateResult = ko.validate.utils.validateRules(valueAccessor(), value); // trigger
+            ko.validate.utils.setMessage(element, options, validateResult.messages.join('. '));
 
+            if (validateResult.hasRequiredRule) {
+                ko.validate.utils.setRequiredMarker(element, options);
+            } else {
+                ko.validate.utils.removeRequiredMarker(element, options);
+            }
+            //console.log('validate: ' + (validateResult.valid ? 'true' : 'false') + ' (' + elementId + ')', viewModel);
+            if (validateResult.valid) {
+                ko.validate.utils.setValid(elementId, viewModel);
+                ko.validate.utils.hideError(element, options);
+            } else {
+                ko.validate.utils.setInvalid(elementId, viewModel);
+                // show error only if observable is modified and is not first computed evaluation
+                if (!isFirstEvaluation && !validateResult.hasRequiredRule)
+                    ko.validate.utils.showError(element, options);
+            }
         }
     };
 
