@@ -17,7 +17,7 @@ License: [MIT](http://www.opensource.org/licenses/mit-license.php)
 
 ####Bower
 ```sh
-bower install knockout-validate --save-dev
+bower install knockout-validate --save
 ```
 
 ##Getting Started
